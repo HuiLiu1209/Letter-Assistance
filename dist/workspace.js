@@ -22,11 +22,10 @@ function animateFold(name, open) {
   toggle.setAttribute('aria-expanded', String(open)); panel.inert = !open; card.classList.toggle('is-open', open);
   if (name === 'instructions') {
     $('instructions-label').textContent = 'Role Card';
-    if (matchMedia('(min-width: 701px)').matches) gsap.to(document.querySelector('.sidebar'), {left:open?26:21,top:open?32:40,gap:open?14:11,duration:reducedMotion()?0:.32,ease:'power2.inOut',overwrite:true});
   }
   gsap.killTweensOf(panel); panel.style.visibility = 'visible';
   gsap.to(toggle.querySelector('.caret'), {rotation:open?180:0,duration:reducedMotion()?0:.25,ease:'power2.out',overwrite:true});
-  gsap.to(panel, {height:open?panel.firstElementChild.scrollHeight:0,duration:reducedMotion()?0:.32,ease:'power2.inOut',onComplete:()=>{
+  gsap.to(panel, {height:open?panel.firstElementChild.getBoundingClientRect().height:0,duration:reducedMotion()?0:.32,ease:'power2.inOut',onComplete:()=>{
     if (open) panel.style.height = 'auto'; else panel.style.visibility = 'hidden';
   }});
 }
@@ -83,6 +82,7 @@ $('role-form').addEventListener('submit',event=>{
 });
 function renderLetters() {
   $('letter-list').replaceChildren();
+  $('letter-list').classList.toggle('is-empty',state.letters.length===0);
   if (!state.letters.length) {const p=document.createElement('p');p.className='empty-state';p.textContent='Your finished letters will appear here.';$('letter-list').append(p);return;}
   for (const letter of state.letters) {
     const button=document.createElement('button');button.type='button';button.className='letter-row';
@@ -99,7 +99,7 @@ $('model-picker').addEventListener('click',()=>{const open=modelMenu.hidden;mode
 modelMenu.querySelector('button').addEventListener('click',closeModelMenu);
 document.addEventListener('click',event=>{if(!event.target.closest('.model-picker')&&!modelMenu.contains(event.target))closeModelMenu();});
 document.addEventListener('keydown',event=>{if(event.key==='Escape')closeModelMenu();});
-function resizeInput() {const input=$('letter-request');input.style.height='19px';input.style.height=`${Math.min(114,input.scrollHeight)}px`;}
+function resizeInput() {const input=$('letter-request');input.style.height='auto';input.style.height=`${Math.min(parseFloat(getComputedStyle(input).maxHeight),input.scrollHeight)}px`;}
 $('letter-request').value=state.draft;resizeInput();
 $('letter-request').addEventListener('input',()=>{state.draft=$('letter-request').value;persist();resizeInput();});
 $('letter-request').addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing){event.preventDefault();if(!busy)$('letter-form').requestSubmit();}});
@@ -125,8 +125,6 @@ $('letter-form').addEventListener('submit',async event=>{
     busy=false;$('send-letter').disabled=false;$('letter-request').readOnly=false;$('letter-form').removeAttribute('aria-busy');
   }
 });
-const mobileLayout=matchMedia('(max-width: 700px)');
-mobileLayout.addEventListener('change',()=>{gsap.killTweensOf(document.querySelector('.sidebar'));gsap.set(document.querySelector('.sidebar'),{clearProps:'left,top,gap'});});
 renderRoles();renderLetters();
 // Report scene failures even before the first request without an unhandled rejection.
 printerReady.catch(()=>notice('The typewriter could not load. Please refresh this page.'));
