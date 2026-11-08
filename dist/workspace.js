@@ -91,9 +91,9 @@ function renderLetters() {
   if (!state.letters.length) {const p=document.createElement('p');p.className='empty-state';p.textContent='Your finished letters will appear here.';$('letter-list').append(p);return;}
   for (const letter of state.letters) {
     const button=document.createElement('button');button.type='button';button.className='letter-row';
-    const title=document.createElement('strong');title.textContent=letter.title;const date=document.createElement('span');date.textContent=new Date(letter.createdAt).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'});
-    button.append(title,date);button.addEventListener('click',()=>{
-      $('letter-title').textContent=letter.title;$('letter-meta').textContent=`${date.textContent} · ${letter.demo?'Sample letter':'Saved letter'} · Read only`;$('letter-text').textContent=letter.text;showDialog($('letter-dialog'));$('letter-dialog').scrollTop=0;
+    const title=document.createElement('strong');title.textContent=letter.title;
+    button.append(title);button.addEventListener('click',()=>{
+      $('letter-title').textContent=letter.title;$('letter-meta').textContent=`${letter.demo?'Sample letter':'Saved letter'} · Read only`;$('letter-text').textContent=letter.text;showDialog($('letter-dialog'));$('letter-dialog').scrollTop=0;
     });$('letter-list').append(button);
   }
 }
