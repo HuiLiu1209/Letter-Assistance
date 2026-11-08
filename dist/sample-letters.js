@@ -28,3 +28,9 @@ Sincerely,
 [Your Name]`,
 };
 export function sampleLetter(roleId) {return {...(roleId==='resignation'?resignation:thankYou)};}
+
+// Paced chunks exercise the same append/finish path as the real model stream.
+export async function* streamSampleLetter(roleId) {
+  const chars=Array.from(sampleLetter(roleId).text);
+  for(let i=0;i<chars.length;i+=5){await new Promise(resolve=>setTimeout(resolve,80));yield chars.slice(i,i+5).join('');}
+}

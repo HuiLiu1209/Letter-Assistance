@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "start": "node server.mjs",
-    "check": "node --check dist/app.js && node --check dist/paper.js && node --check dist/workspace.js && node --check dist/sample-letters.js && node --check server.mjs && node --check src/server/chat.mjs",
+    "check": "node --check dist/app.js && node --check dist/paper.js && node --check dist/workspace.js && node --check dist/sample-letters.js && node --check server.mjs && node --check src/server/chat.mjs && node --check dist/stream.js && node --check dist/print-layout.js && node --check dist/bell.js && node --check dist/mechanics.js",
     "test": "node --test tests/*.test.mjs"
   },
   "dependencies": {

@@ -1,7 +1,9 @@
 import {printerReady} from './app.js';
 import {presets, roleFields} from './roles.js';
 import {loadWorkspace, saveWorkspace} from './storage.js';
-import {sampleLetter} from './sample-letters.js';
+import {sampleLetter,streamSampleLetter} from './sample-letters.js';
+import {letterDeltas} from './stream.js';
+import {unlockPrinterAudio} from './bell.js';
 const gsap = window.gsap;
 const $ = id => document.getElementById(id);
 const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -117,22 +119,25 @@ $('letter-request').addEventListener('keydown',event=>{if(event.key==='Enter'&&!
 $('letter-form').addEventListener('submit',async event=>{
   event.preventDefault();if(busy)return;
   const request=$('letter-request').value.trim()||(demoMode?'Print a sample letter.':'');if(!request){$('letter-request').focus();return;}
+  void unlockPrinterAudio();
   const role={...selectedRole()};busy=true;$('send-letter').disabled=true;$('letter-request').readOnly=true;$('letter-form').setAttribute('aria-busy','true');
   let printer;
   try {
     notice('Preparing your letter…');printer=await printerReady;printer.prepare();
-    let result;
-    if(demoMode) result=sampleLetter(role.id);
-    else {
-      const response=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({request,role,model:state.model}),signal:AbortSignal.timeout(55000)});
-      try{result=await response.json();}catch{throw new Error('The AI connection is unavailable. Your request is kept here; please try again.');}
-      if(!response.ok)throw new Error(result.error||'Unable to write this letter. Please try again.');
+    let source;
+    if(demoMode)source=streamSampleLetter(role.id);
+    else{
+      const response=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json','Accept':'text/event-stream'},body:JSON.stringify({request,role,model:state.model,stream:true}),signal:AbortSignal.timeout(55000)});
+      source=letterDeltas(response);
     }
-    if(typeof result.text!=='string'||!result.text.trim())throw new Error('No letter was returned. Please try again.');
+    let text='';
+    for await(const delta of source){text+=delta;if(text.length>12000)throw new Error('The letter is too long to print. Please ask for a shorter letter.');notice('Printing…');printer.append(delta);}
+    if(!text.trim())throw new Error('No letter was returned. Please try again.');
+    await printer.finish();
+    const result={text,name:demoMode?sampleLetter(role.id).name:role.name};
     const firstLine=demoMode?`Sample — ${result.name}`:request.split('\n').find(Boolean)||role.name;
     const letter={id:crypto.randomUUID(),title:firstLine.length>48?`${firstLine.slice(0,48)}…`:firstLine,role:{...role},model:demoMode?'sample-letter':state.model,demo:demoMode,request,text:result.text,createdAt:new Date().toISOString()};
     state.letters.unshift(letter);state.draft='';$('letter-request').value='';resizeInput();const saved=saveWorkspace(storage,state);renderLetters();
-    notice('Printing…');await printer.print(result.text);
     notice(saved?'Saved in Letters.':'Printed, but browser storage is unavailable or full. Keep this page open to retain this letter.',saved);
   } catch(error) {
     printer?.clear();notice(error.name==='TimeoutError'?'The model took too long. Your request is kept here; please try again.':error.message||'Unable to write this letter. Please try again.');

@@ -517,6 +517,8 @@
   ],
   "carriage": [
     "carriage_inside",
+    "platen_roller",
     "carriage_frame"
-  ]
+  ],
+  "roller": "platen_roller"
 }
