@@ -37,6 +37,7 @@ function icon(file) {const image=document.createElement('img');image.src=`./asse
 function renderRoles() {
   for (const [list, roles] of [[$('preset-list'),presets],[$('custom-list'),state.roles]]) {
     list.replaceChildren();
+    list.classList.toggle('is-empty',roles.length===0);
     if (!roles.length) {const p=document.createElement('p');p.className='empty-state';p.textContent='No custom roles yet.';list.append(p);}
     for (const role of roles) {
       const row=document.createElement('div');row.className='role-row';row.dataset.selected=String(role.id===selectedRole().id);
@@ -69,6 +70,7 @@ function openRole(role = null) {
   showDialog($('role-dialog'));$('role-dialog').scrollTop=0;
 }
 $('new-role').addEventListener('click',()=>openRole());
+$('add-custom-role').addEventListener('click',()=>openRole());
 $('role-form').addEventListener('submit',event=>{
   event.preventDefault();
   if (editingRole && !editingRole.id.startsWith('custom-')) state.selectedRole=editingRole.id;
