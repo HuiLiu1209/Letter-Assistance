@@ -10,3 +10,9 @@ test('corrupt storage is recoverable and quota errors are visible to callers',()
   assert.deepEqual(loadWorkspace({getItem:()=>'{bad'}),emptyWorkspace());
   assert.equal(saveWorkspace({setItem:()=>{throw Error('Quota exceeded');}},emptyWorkspace()),false);
 });
+test('General becomes the new default without losing letters, cards or future explicit choices',()=>{
+  const storage=memory(),legacy={version:1,roles:[{id:'custom-kept',name:'Personal'}],letters:[{id:'kept',title:'My letter',text:'Existing letter'}],selectedRole:'resignation',draft:'Unsent request'};
+  storage.setItem('letter-assistance.workspace.v1',JSON.stringify(legacy));const migrated=loadWorkspace(storage);
+  assert.equal(migrated.selectedRole,'general');assert.equal(migrated.letters[0].text,'Existing letter');assert.equal(migrated.roles[0].name,'Personal');assert.equal(migrated.draft,'Unsent request');
+  migrated.selectedRole='thank-you';saveWorkspace(storage,migrated);assert.equal(loadWorkspace(storage).selectedRole,'thank-you');
+});

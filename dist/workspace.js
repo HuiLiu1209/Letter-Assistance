@@ -1,5 +1,5 @@
 import {printerReady} from './app.js';
-import {presets, roleFields} from './roles.js';
+import {presets, roleFields, DEFAULT_ROLE_ID} from './roles.js';
 import {loadWorkspace, saveWorkspace} from './storage.js';
 import {sampleLetter,streamSampleLetter} from './sample-letters.js';
 import {letterDeltas} from './stream.js';
@@ -11,7 +11,7 @@ let storage;
 try { storage = localStorage; } catch { storage = {getItem:()=>null,setItem:()=>{throw new Error('Storage unavailable');}}; }
 const state = loadWorkspace(storage);
 const allRoles = () => [...presets, ...state.roles];
-const selectedRole = () => allRoles().find(r => r.id === state.selectedRole) || presets[1];
+const selectedRole = () => allRoles().find(r => r.id === state.selectedRole) || presets.find(role=>role.id===DEFAULT_ROLE_ID);
 const demoMode = new URLSearchParams(location.search).get('demo') === '1';
 let busy = false, editingRole = null, noticeTimer;
 function notice(message, temporary = false) {
@@ -35,7 +35,7 @@ function animateFold(name, open) {
 }
 for (const name of ['instructions','letters']) $(`${name}-toggle`).addEventListener('click', ()=>animateFold(name, $(`${name}-toggle`).getAttribute('aria-expanded') !== 'true'));
 function syncComposer() {
-  const role = selectedRole(); $('letter-request').placeholder = demoMode ? `Print a sample ${role.id==='resignation'?'resignation':'thank-you'} letter` : `Work with ${role.name}`; $('diagram-role').textContent = role.name;
+  const role = selectedRole(); $('letter-request').placeholder = demoMode ? `Print a sample ${sampleLetter(role.id).name.toLowerCase()}` : `Work with ${role.name}`; $('diagram-role').textContent = role.name;
 }
 function icon(file) {const image=document.createElement('img');image.src=`./assets/ui/${file}.svg`;image.alt='';return image;}
 function renderRoles() {

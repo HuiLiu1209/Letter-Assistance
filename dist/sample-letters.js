@@ -27,7 +27,20 @@ Thank you again for the experience and your understanding.
 Sincerely,
 [Your Name]`,
 };
-export function sampleLetter(roleId) {return {...(roleId==='resignation'?resignation:thankYou)};}
+const general = {
+  name: 'General Letter',
+  text: `Dear Alex,
+
+I am writing to invite you to a small gathering at [Location] on [Date] at [Time]. It would be lovely to spend some time together and catch up.
+
+Please let me know whether you will be able to join us, and feel free to share any questions about the plans.
+
+I hope to see you there.
+
+Warm regards,
+Sam`,
+};
+export function sampleLetter(roleId) {return {...(roleId==='general'?general:roleId==='resignation'?resignation:thankYou)};}
 
 // Paced chunks exercise the same append/finish path as the real model stream.
 export async function* streamSampleLetter(roleId) {

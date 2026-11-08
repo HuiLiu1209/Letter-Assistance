@@ -28,7 +28,7 @@ test('proxy forwards the first model chunk before the model finishes, then sends
   const server=createServer({chat:createChatHandler({apiKey:'test-only',fetchImpl:async url=>{requestedURL=url;return new Response(upstream);}})});
   server.listen(0,'127.0.0.1');await once(server,'listening');
   try{
-    const response=await fetch(`http://127.0.0.1:${server.address().port}/api/chat`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({role:presets[1],request:'Thank Alex.',model:'gemini-3.5-flash-lite',stream:true})});
+    const response=await fetch(`http://127.0.0.1:${server.address().port}/api/chat`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({role:presets.find(role=>role.id==='thank-you'),request:'Thank Alex.',model:'gemini-3.5-flash-lite',stream:true})});
     assert.match(response.headers.get('content-type'),/text\/event-stream/);assert.match(requestedURL,/:streamGenerateContent\?alt=sse$/);
     const chunks=letterDeltas(response);let timer;
     const first=await Promise.race([chunks.next(),new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('First chunk was buffered')),1000);})]);clearTimeout(timer);
@@ -38,6 +38,6 @@ test('proxy forwards the first model chunk before the model finishes, then sends
 test('a blocked or truncated upstream emits an error after partial ink, never done',async()=>{
   const data=body([event({candidates:[{content:{parts:[{text:'Partial'}]}}]}),event({candidates:[{finishReason:'MAX_TOKENS'}]})]);
   const server=createServer({chat:createChatHandler({apiKey:'test-only',fetchImpl:async()=>new Response(data)})});server.listen(0,'127.0.0.1');await once(server,'listening');
-  try{const response=await fetch(`http://127.0.0.1:${server.address().port}/api/chat`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({role:presets[1],request:'Thank Alex.',model:'gemini-3.5-flash-lite',stream:true})});await assert.rejects(()=>collect(letterDeltas(response)),/could not be completed/);}
+  try{const response=await fetch(`http://127.0.0.1:${server.address().port}/api/chat`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({role:presets.find(role=>role.id==='thank-you'),request:'Thank Alex.',model:'gemini-3.5-flash-lite',stream:true})});await assert.rejects(()=>collect(letterDeltas(response)),/could not be completed/);}
   finally{server.closeAllConnections();await new Promise(resolve=>server.close(resolve));}
 });

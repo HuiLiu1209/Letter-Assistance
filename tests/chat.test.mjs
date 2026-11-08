@@ -4,7 +4,7 @@ import {once} from 'node:events';
 import {createServer} from '../server.mjs';
 import {createChatHandler} from '../src/server/chat.mjs';
 import {presets} from '../dist/roles.js';
-const valid = {request:'Thank Alex for helping with my project. Sign Sam.',role:presets[1],model:'gemini-3.5-flash-lite'};
+const valid = {request:'Thank Alex for helping with my project. Sign Sam.',role:presets.find(role=>role.id==='thank-you'),model:'gemini-3.5-flash-lite'};
 async function withServer(options, run) {
   const server=createServer({chat:createChatHandler(options)});server.listen(0,'127.0.0.1');await once(server,'listening');
   const url=`http://127.0.0.1:${server.address().port}/api/chat`;

@@ -40,7 +40,7 @@
       <p class="composer-notice" id="composer-notice" role="status" aria-live="polite" hidden></p>
       <form class="composer" id="letter-form">
         <label class="sr-only" for="letter-request">Describe the letter you want to write</label>
-        <textarea id="letter-request" rows="1" maxlength="6000" placeholder="Work with Thank-You Letter" required></textarea>
+        <textarea id="letter-request" rows="1" maxlength="6000" placeholder="Work with General Letter" required></textarea>
         <div class="composer-actions">
           <button class="model-picker" id="model-picker" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="model-menu"><span>Gemini 3.5 Flash-Lite</span><img class="caret" src="./assets/ui/caret-down.svg" alt=""></button>
           <button class="send" id="send-letter" type="submit" aria-label="Write letter"><img src="./assets/ui/arrow-up.svg" alt=""></button>
@@ -66,7 +66,7 @@
       <p class="diagram-intro">You provide the intent. The role sets the boundaries. AI writes the letter.</p>
       <ol class="system-flow">
         <li><span class="flow-label">You</span><strong>Letter request</strong><p>Recipient, facts, tone and language.</p></li>
-        <li><span class="flow-label">Role Card</span><strong id="diagram-role">Thank-You Letter</strong><p>The selected Role Card becomes the system instruction.</p></li>
+        <li><span class="flow-label">Role Card</span><strong id="diagram-role">General Letter</strong><p>The selected Role Card becomes the system instruction.</p></li>
         <li><span class="flow-label" id="diagram-provider">Gemini</span><strong>Write the letter</strong><p id="diagram-generation">Uses your request and the Role Card. No invented facts or follow-up chat.</p></li>
         <li><span class="flow-label">Typewriter → Letters</span><strong>Print & save</strong><p>The finished letter prints on paper and is saved on this browser for viewing only.</p></li>
       </ol>

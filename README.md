@@ -19,7 +19,7 @@ Open http://127.0.0.1:4173. Without a key, the scene, Role Cards and saved-lette
 
 ## Writing flow
 
-1. Open Role Card and click a preset to select it immediately. Resignation Letter and Thank-You Letter are the presets. New Role Card opens the eight-field custom card form; the pencil beside an existing custom row edits it.
+1. Open Role Card and click a preset to select it immediately. General Letter is the default preset for any kind of letter; Resignation Letter and Thank-You Letter remain available as focused presets. New Role Card opens the eight-field custom card form; the pencil beside an existing custom row edits it.
 2. Describe the letter in the bottom composer. Enter submits; Shift+Enter adds a line.
 3. Only the leading edge of a full-size paper sheet emerges from the roller. Gemini receives the selected Role Card as its system instruction and the current request as user input. Its streaming text is queued as it arrives, without a chat or review step. The paper wraps around the original roller and exits toward the Underwood backplate. Each character depresses its key, swings a typebar to the fixed print point, stamps the glyph, and advances the carriage. Each new line returns the carriage and feeds the sheet upward; neither the paper nor its ink is stretched.
 4. GSAP animates line feed, camera framing, key presses, incremental printing, accordion sections and dialogs. The Platen bell rings on non-empty line returns. Reduced-motion preferences skip movement and progressive typing.
