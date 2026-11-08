@@ -19,7 +19,7 @@ Open http://127.0.0.1:4173. Without a key, the scene, Role Cards and saved-lette
 
 ## Writing flow
 
-1. Open Role Card to view the presets and custom roles. Resignation Letter and Thank-You Letter are the presets. View all eight fields and choose “Use this role”, or create/edit a custom Role Card.
+1. Open Role Card and click a preset to select it immediately. Resignation Letter and Thank-You Letter are the presets. New Role Card opens the eight-field custom card form; the pencil beside an existing custom row edits it.
 2. Describe the letter in the bottom composer. Enter submits; Shift+Enter adds a line.
 3. A separate paper mesh appears in the typewriter. Gemini receives the selected Role Card as its system instruction and the current request as user input. It returns the finished letter directly, without a chat or review step.
 4. GSAP animates the sheet, camera framing, key presses, progressive printing, accordion sections and dialogs. Reduced-motion preferences skip movement and progressive typing.
@@ -28,6 +28,12 @@ Open http://127.0.0.1:4173. Without a key, the scene, Role Cards and saved-lette
 There is no conversation history, letter editing, cloud database, upload or STT. The browser stores custom Role Cards, finished letters (including the original request and Role Card snapshot), selected role and the next request draft. Clearing browser data removes these records. Storage failures display a notice instead of claiming a save succeeded.
 
 System Diagram explains the implemented flow and what is sent to Google. The model picker currently contains the single model shown in Figma, `gemini-3.5-flash-lite`.
+
+## Sample mode
+
+Open http://127.0.0.1:4173/?demo=1 to test paper insertion, progressive printing and read-only saved letters without a key. The model picker explicitly says **Sample letter**, with a visible sample-mode note. Press Send to print the fixed example corresponding to the selected preset. Requests and custom instructions do not change the example, and no API call is made. Sample letters are marked in the saved-letter viewer.
+
+Use the model picker to switch back to Gemini (the normal URL without `?demo=1`) after configuring the key. This is an explicit preview mode, never an automatic fallback for failed Gemini requests.
 
 ## API and deployment
 

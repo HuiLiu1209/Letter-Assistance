@@ -1,6 +1,7 @@
 import {printerReady} from './app.js';
 import {presets, roleFields} from './roles.js';
 import {loadWorkspace, saveWorkspace} from './storage.js';
+import {sampleLetter} from './sample-letters.js';
 const gsap = window.gsap;
 const $ = id => document.getElementById(id);
 const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -9,6 +10,7 @@ try { storage = localStorage; } catch { storage = {getItem:()=>null,setItem:()=>
 const state = loadWorkspace(storage);
 const allRoles = () => [...presets, ...state.roles];
 const selectedRole = () => allRoles().find(r => r.id === state.selectedRole) || presets[1];
+const demoMode = new URLSearchParams(location.search).get('demo') === '1';
 let busy = false, editingRole = null, noticeTimer;
 function notice(message, temporary = false) {
   clearTimeout(noticeTimer); $('composer-notice').textContent = message; $('composer-notice').hidden = !message;
@@ -31,7 +33,7 @@ function animateFold(name, open) {
 }
 for (const name of ['instructions','letters']) $(`${name}-toggle`).addEventListener('click', ()=>animateFold(name, $(`${name}-toggle`).getAttribute('aria-expanded') !== 'true'));
 function syncComposer() {
-  const role = selectedRole(); $('letter-request').placeholder = `Work with ${role.name}`; $('diagram-role').textContent = role.name;
+  const role = selectedRole(); $('letter-request').placeholder = demoMode ? `Print a sample ${role.id==='resignation'?'resignation':'thank-you'} letter` : `Work with ${role.name}`; $('diagram-role').textContent = role.name;
 }
 function icon(file) {const image=document.createElement('img');image.src=`./assets/ui/${file}.svg`;image.alt='';return image;}
 function renderRoles() {
@@ -41,7 +43,7 @@ function renderRoles() {
     if (!roles.length) {const p=document.createElement('p');p.className='empty-state';p.textContent='No custom roles yet.';list.append(p);}
     for (const role of roles) {
       const row=document.createElement('div');row.className='role-row';row.dataset.selected=String(role.id===selectedRole().id);
-      const button=document.createElement('button');button.type='button';button.className='role-select';button.textContent=role.name;button.title=`View ${role.name} Role Card`;button.setAttribute('aria-pressed',String(role.id===selectedRole().id));button.addEventListener('click',()=>openRole(role));row.append(button);
+      const button=document.createElement('button');button.type='button';button.className='role-select';button.textContent=role.name;button.title=`Use ${role.name}`;button.setAttribute('aria-pressed',String(role.id===selectedRole().id));button.addEventListener('click',()=>{state.selectedRole=role.id;persist();renderRoles();});row.append(button);
       if (role.id.startsWith('custom-')) {const edit=document.createElement('button');edit.type='button';edit.className='role-edit';edit.setAttribute('aria-label',`Edit ${role.name}`);edit.append(icon('note-pencil'));edit.addEventListener('click',()=>openRole(role));row.append(edit);}
       list.append(row);
     }
@@ -70,7 +72,6 @@ function openRole(role = null) {
   showDialog($('role-dialog'));$('role-dialog').scrollTop=0;
 }
 $('new-role').addEventListener('click',()=>openRole());
-$('add-custom-role').addEventListener('click',()=>openRole());
 $('role-form').addEventListener('submit',event=>{
   event.preventDefault();
   if (editingRole && !editingRole.id.startsWith('custom-')) state.selectedRole=editingRole.id;
@@ -90,7 +91,7 @@ function renderLetters() {
     const button=document.createElement('button');button.type='button';button.className='letter-row';
     const title=document.createElement('strong');title.textContent=letter.title;const date=document.createElement('span');date.textContent=new Date(letter.createdAt).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'});
     button.append(title,date);button.addEventListener('click',()=>{
-      $('letter-title').textContent=letter.title;$('letter-meta').textContent=`${date.textContent} · Saved letter · Read only`;$('letter-text').textContent=letter.text;showDialog($('letter-dialog'));$('letter-dialog').scrollTop=0;
+      $('letter-title').textContent=letter.title;$('letter-meta').textContent=`${date.textContent} · ${letter.demo?'Sample letter':'Saved letter'} · Read only`;$('letter-text').textContent=letter.text;showDialog($('letter-dialog'));$('letter-dialog').scrollTop=0;
     });$('letter-list').append(button);
   }
 }
@@ -98,7 +99,15 @@ $('system-diagram').addEventListener('click',()=>showDialog($('diagram-dialog'))
 const modelMenu=$('model-menu');
 function closeModelMenu() {modelMenu.hidden=true;$('model-picker').setAttribute('aria-expanded','false');}
 $('model-picker').addEventListener('click',()=>{const open=modelMenu.hidden;modelMenu.hidden=!open;$('model-picker').setAttribute('aria-expanded',String(open));if(open)gsap.fromTo(modelMenu,{opacity:0,y:5},{opacity:1,y:0,duration:reducedMotion()?0:.18});});
-modelMenu.querySelector('button').addEventListener('click',closeModelMenu);
+modelMenu.replaceChildren();
+for (const option of [{demo:true,label:'Sample letter'},{demo:false,label:'Gemini 3.5 Flash-Lite'}]) {
+  const button=document.createElement('button');button.type='button';button.textContent=option.label;button.setAttribute('aria-pressed',String(option.demo===demoMode));
+  if(option.demo===demoMode){const status=document.createElement('span');status.textContent='Selected';button.append(status);}
+  button.addEventListener('click',()=>{closeModelMenu();if(option.demo!==demoMode){const url=new URL(location.href);if(option.demo)url.searchParams.set('demo','1');else url.searchParams.delete('demo');location.assign(url.href);}});modelMenu.append(button);
+}
+$('model-picker').querySelector('span').textContent=demoMode?'Sample letter':'Gemini 3.5 Flash-Lite';
+$('demo-hint').hidden=!demoMode;$('letter-request').required=!demoMode;
+if(demoMode){$('diagram-provider').textContent='Sample letter';$('diagram-generation').textContent='Prints a fixed example for the selected preset. Your input and custom instructions do not alter the sample, and no request is sent to a model.';document.querySelector('.diagram-intro').textContent='Sample mode previews the paper, printing and saved-letter flow without an AI call.';}
 document.addEventListener('click',event=>{if(!event.target.closest('.model-picker')&&!modelMenu.contains(event.target))closeModelMenu();});
 document.addEventListener('keydown',event=>{if(event.key==='Escape')closeModelMenu();});
 function resizeInput() {const input=$('letter-request');input.style.height='auto';input.style.height=`${Math.min(parseFloat(getComputedStyle(input).maxHeight),input.scrollHeight)}px`;}
@@ -107,17 +116,21 @@ $('letter-request').addEventListener('input',()=>{state.draft=$('letter-request'
 $('letter-request').addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing){event.preventDefault();if(!busy)$('letter-form').requestSubmit();}});
 $('letter-form').addEventListener('submit',async event=>{
   event.preventDefault();if(busy)return;
-  const request=$('letter-request').value.trim();if(!request){$('letter-request').focus();return;}
+  const request=$('letter-request').value.trim()||(demoMode?'Print a sample letter.':'');if(!request){$('letter-request').focus();return;}
   const role={...selectedRole()};busy=true;$('send-letter').disabled=true;$('letter-request').readOnly=true;$('letter-form').setAttribute('aria-busy','true');
   let printer;
   try {
     notice('Preparing your letter…');printer=await printerReady;printer.prepare();
-    const response=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({request,role,model:state.model}),signal:AbortSignal.timeout(55000)});
-    let result;try{result=await response.json();}catch{throw new Error('The AI connection is unavailable. Your request is kept here; please try again.');}
-    if(!response.ok)throw new Error(result.error||'Unable to write this letter. Please try again.');
+    let result;
+    if(demoMode) result=sampleLetter(role.id);
+    else {
+      const response=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({request,role,model:state.model}),signal:AbortSignal.timeout(55000)});
+      try{result=await response.json();}catch{throw new Error('The AI connection is unavailable. Your request is kept here; please try again.');}
+      if(!response.ok)throw new Error(result.error||'Unable to write this letter. Please try again.');
+    }
     if(typeof result.text!=='string'||!result.text.trim())throw new Error('No letter was returned. Please try again.');
-    const firstLine=request.split('\n').find(Boolean)||role.name;
-    const letter={id:crypto.randomUUID(),title:firstLine.length>48?`${firstLine.slice(0,48)}…`:firstLine,role:{...role},model:state.model,request,text:result.text,createdAt:new Date().toISOString()};
+    const firstLine=demoMode?`Sample — ${result.name}`:request.split('\n').find(Boolean)||role.name;
+    const letter={id:crypto.randomUUID(),title:firstLine.length>48?`${firstLine.slice(0,48)}…`:firstLine,role:{...role},model:demoMode?'sample-letter':state.model,demo:demoMode,request,text:result.text,createdAt:new Date().toISOString()};
     state.letters.unshift(letter);state.draft='';$('letter-request').value='';resizeInput();const saved=saveWorkspace(storage,state);renderLetters();
     notice('Printing…');await printer.print(result.text);
     notice(saved?'Saved in Letters.':'Printed, but browser storage is unavailable or full. Keep this page open to retain this letter.',saved);

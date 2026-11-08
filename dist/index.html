@@ -24,7 +24,7 @@
         <div class="fold" id="instructions-panel" inert><div class="fold-inner role-list">
           <button class="new-role" id="new-role"><img src="./assets/ui/pencil-simple.svg" alt="">New Role Card</button>
           <div class="role-group"><h2>Preset</h2><div id="preset-list"></div></div>
-          <div class="role-group"><div class="role-group-header"><h2>Custom</h2><button id="add-custom-role" class="add-custom-role" type="button" aria-label="Add custom Role Card" title="Add custom Role Card">+</button></div><div id="custom-list"></div></div>
+          <div class="role-group"><h2>Custom</h2><div id="custom-list"></div></div>
         </div></div>
       </section>
       <section class="side-card" id="letters-card">
@@ -36,6 +36,7 @@
       <button class="side-card section-toggle" id="system-diagram"><img class="icon" src="./assets/ui/intersect-square.svg" alt=""><span>System Diagram</span></button>
     </nav>
     <div class="composer-wrap">
+      <p id="demo-hint" class="demo-hint" hidden>Sample mode · Prints a fixed example, without an AI call.</p>
       <p class="composer-notice" id="composer-notice" role="status" aria-live="polite" hidden></p>
       <form class="composer" id="letter-form">
         <label class="sr-only" for="letter-request">Describe the letter you want to write</label>
@@ -66,7 +67,7 @@
       <ol class="system-flow">
         <li><span class="flow-label">You</span><strong>Letter request</strong><p>Recipient, facts, tone and language.</p></li>
         <li><span class="flow-label">Role Card</span><strong id="diagram-role">Thank-You Letter</strong><p>The selected Role Card becomes the system instruction.</p></li>
-        <li><span class="flow-label">Gemini</span><strong>Write the letter</strong><p>Uses your request and the Role Card. No invented facts or follow-up chat.</p></li>
+        <li><span class="flow-label" id="diagram-provider">Gemini</span><strong>Write the letter</strong><p id="diagram-generation">Uses your request and the Role Card. No invented facts or follow-up chat.</p></li>
         <li><span class="flow-label">Typewriter → Letters</span><strong>Print & save</strong><p>The finished letter prints on paper and is saved on this browser for viewing only.</p></li>
       </ol>
       <p class="diagram-note">The assistant writes letters. It does not send them. Your saved letters and custom Role Cards stay in this browser; generating a letter sends that request and Role Card to Google.</p>
