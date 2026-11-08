@@ -21,7 +21,7 @@ Original source: `source-assets/Final Model and Textures/SM_Typewriter_01.fbx` a
 
 `scripts/prepare-model.mjs` separates disconnected geometry into keys, typebars and carriage groups, normalizes coordinates and exports an indexed GLB. 47 key groups and 43 typebar groups are individually animated. Motion is a visual approximation, not a mechanically exact linkage simulation.
 
-Textures are converted to 2048px JPEG for browser use. Original RMA channels are remapped from roughness/metalness/AO to AO/roughness/metalness. DirectX normals use an inverted green component.
+Textures retain the supplied 4096×4096 RGB texels. `scripts/prepare-textures.py` changes only the container from TGA to lossless PNG and verifies all nine decoded images are pixel-identical. The original RMA channels stay intact; the material shader reads R as roughness, G as metalness and B as AO. Base color uses sRGB, data maps use no color-space transform, and DirectX normals use an inverted green component. A low-fill studio environment replaces the earlier white room, with separate warm key and cool rim lights. The original-model view hides only the added paper and uses a dark background.
 
 Third-party assets: Three.js 0.170.0, MIT license, retained at `dist/vendor/THREE-LICENSE.txt`. The model is user-supplied; this project does not claim ownership or attach a new license to it. Code is original, using the Spline example as an interaction reference; no Spline source or assets were copied.
 

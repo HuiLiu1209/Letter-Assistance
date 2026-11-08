@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from './vendor/OrbitControls.js';
 import { GLTFLoader } from './vendor/GLTFLoader.js';
-import { RoomEnvironment } from './vendor/RoomEnvironment.js';
 
 const $=id=>document.getElementById(id);
 const host=$('canvas-host'), stage=$('stage'), input=$('keyboard-input');
@@ -10,16 +9,23 @@ const camera=new THREE.PerspectiveCamera(36,1,.1,150);
 const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});
 renderer.setPixelRatio(Math.min(devicePixelRatio,2));
 renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
-renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;
+renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=.86;
 host.appendChild(renderer.domElement);renderer.domElement.setAttribute('aria-label','Underwood 三维打字机，拖动可旋转，点击按键可打字');
-const pmrem=new THREE.PMREMGenerator(renderer),room=new RoomEnvironment();
-scene.environment=pmrem.fromScene(room,.04).texture;room.dispose();pmrem.dispose();
+// A dark studio with isolated softboxes preserves contrast in the supplied PBR maps.
+const studio=new THREE.Scene();studio.background=new THREE.Color(0x080b10);
+const softbox=(position,size,intensity,color)=>{const m=new THREE.Mesh(new THREE.PlaneGeometry(...size),new THREE.MeshBasicMaterial({color:new THREE.Color(color).multiplyScalar(intensity),side:THREE.DoubleSide}));m.position.set(...position);m.lookAt(0,1,0);studio.add(m);};
+softbox([-5,7,5],[4,6],10,0xffe5c6);
+softbox([6,4,-3],[3,7],8,0xd0e0ff);
+softbox([0,8,-1],[5,3],4,0xffffff);
+softbox([-2,2,-6],[2,5],2,0xffbd89);
+const pmrem=new THREE.PMREMGenerator(renderer);scene.environment=pmrem.fromScene(studio,.03).texture;
+studio.traverse(o=>{if(o.isMesh){o.geometry.dispose();o.material.dispose();}});pmrem.dispose();
 const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.dampingFactor=.065;controls.enablePan=false;controls.minDistance=8;controls.maxDistance=25;controls.maxPolarAngle=Math.PI*.49;controls.minPolarAngle=.25;
 const look=new THREE.Vector3(0,2.8,0);
 camera.position.set(8.3,7.6,13.8);controls.target.copy(look);controls.update();
-const hemi=new THREE.HemisphereLight(0xfff9ed,0x68604d,1.2);scene.add(hemi);
-const keyLight=new THREE.DirectionalLight(0xfff1da,2.6);keyLight.position.set(-5,11,6);keyLight.castShadow=true;keyLight.shadow.mapSize.set(2048,2048);Object.assign(keyLight.shadow.camera,{left:-11,right:11,top:11,bottom:-11,near:1,far:35});keyLight.shadow.normalBias=.025;keyLight.shadow.bias=-.0002;keyLight.shadow.radius=4;scene.add(keyLight);
-const rim=new THREE.DirectionalLight(0xe1eaff,1.7);rim.position.set(7,6,-5);scene.add(rim);
+const hemi=new THREE.HemisphereLight(0xc3d2e1,0x17110c,.16);scene.add(hemi);
+const keyLight=new THREE.DirectionalLight(0xffe7ce,2.8);keyLight.position.set(-5,9,7);keyLight.castShadow=true;keyLight.shadow.mapSize.set(2048,2048);Object.assign(keyLight.shadow.camera,{left:-11,right:11,top:11,bottom:-11,near:1,far:35});keyLight.shadow.normalBias=.025;keyLight.shadow.bias=-.0002;keyLight.shadow.radius=4;scene.add(keyLight);
+const rim=new THREE.DirectionalLight(0xc7ddff,1.8);rim.position.set(6,5,-5);scene.add(rim);
 const floor=new THREE.Mesh(new THREE.PlaneGeometry(200,200),new THREE.ShadowMaterial({color:0x4d4435,opacity:.18}));floor.rotation.x=-Math.PI/2;floor.position.y=-.02;floor.receiveShadow=true;scene.add(floor);
 const shadowCanvas=document.createElement('canvas');shadowCanvas.width=shadowCanvas.height=128;const sh=shadowCanvas.getContext('2d'),grad=sh.createRadialGradient(64,64,10,64,64,64);grad.addColorStop(0,'rgba(42,34,20,.35)');grad.addColorStop(.6,'rgba(42,34,20,.15)');grad.addColorStop(1,'rgba(42,34,20,0)');sh.fillStyle=grad;sh.fillRect(0,0,128,128);const shadow=new THREE.Mesh(new THREE.PlaneGeometry(10,9),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(shadowCanvas),transparent:true,depthWrite:false}));shadow.rotation.x=-Math.PI/2;shadow.position.y=.005;scene.add(shadow);
 
@@ -55,8 +61,8 @@ input.addEventListener('input',()=>{if(composing||suppressInput)return;for(const
 window.addEventListener('keydown',e=>{if(e.isComposing||composing||e.metaKey||e.ctrlKey||e.altKey)return;if(document.activeElement?.tagName==='BUTTON'&&['Enter',' '].includes(e.key))return;if(e.key==='Enter'){e.preventDefault();typeChar('\n',{manual:true});}else if(e.key==='Backspace'){e.preventDefault();typeChar('Backspace',{manual:true});}else if(e.key==='Tab'&&document.activeElement===input){e.preventDefault();typeChar('Tab',{manual:true});}else if(e.key.length===1){e.preventDefault();typeChar(e.key,{manual:true});}});
 input.addEventListener('paste',e=>{e.preventDefault();for(const c of e.clipboardData.getData('text/plain'))typeChar(c,{manual:true});});
 
-const views={home:{pos:[8.3,7.6,13.8],target:[0,2.8,0]},front:{pos:[0,7.5,15.8],target:[0,2.8,0]},detail:{pos:[5.4,6.9,7.4],target:[0,2.7,.25]},paper:{pos:[0,5.8,7.1],target:[.25,4.6,-1.9]}};
-document.querySelectorAll('.view').forEach(b=>b.addEventListener('click',()=>{stage.classList.toggle('focus-view',b.dataset.view==='paper'||b.dataset.view==='detail');document.querySelectorAll('.view').forEach(x=>x.classList.toggle('active',x===b));const v=views[b.dataset.view];frameTarget={pos:new THREE.Vector3(...v.pos),target:new THREE.Vector3(...v.target)};}));
+const views={home:{pos:[8.3,7.6,13.8],target:[0,2.8,0]},front:{pos:[0,7.5,15.8],target:[0,2.8,0]},detail:{pos:[5.4,6.9,7.4],target:[0,2.7,.25]},paper:{pos:[0,5.8,7.1],target:[.25,4.6,-1.9]},model:{pos:[6,8.2,9],target:[0,2,0]}};
+document.querySelectorAll('.view').forEach(b=>b.addEventListener('click',()=>{stage.classList.toggle('focus-view',b.dataset.view==='paper'||b.dataset.view==='detail');stage.classList.toggle('model-view',b.dataset.view==='model');paper.visible=b.dataset.view!=='model';document.querySelectorAll('.view').forEach(x=>x.classList.toggle('active',x===b));const v=views[b.dataset.view];frameTarget={pos:new THREE.Vector3(...v.pos),target:new THREE.Vector3(...v.target)};}));
 controls.addEventListener('start',()=>{frameTarget=null;document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));});
 const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2();let pointerStart=null;
 renderer.domElement.addEventListener('pointerdown',e=>{pointerStart=[e.clientX,e.clientY];});
@@ -65,8 +71,21 @@ function resize(){const {width,height}=host.getBoundingClientRect();camera.aspec
 new ResizeObserver(resize).observe(host);resize();
 
 const manager=new THREE.LoadingManager();const tl=new THREE.TextureLoader(manager);
-function texture(name,color=false){const t=tl.load(`./assets/${name}.jpg`);t.flipY=true;t.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());if(color)t.colorSpace=THREE.SRGBColorSpace;return t;}
-const materials={};for(const name of ['Frame','Inside','Keys']){const map=texture(`T_${name}_ALB`,true),normal=texture(`T_${name}_NRM`),orm=texture(`T_${name}_ORM`);materials[name]=new THREE.MeshStandardMaterial({name,map,normalMap:normal,normalScale:new THREE.Vector2(1,-1),roughnessMap:orm,metalnessMap:orm,aoMap:orm,aoMapIntensity:.65,roughness:1,metalness:1,envMapIntensity:.5});}
+function texture(name,color=false){const t=tl.load(`./assets/original-4k/${name}.png`);t.flipY=true;t.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());if(color)t.colorSpace=THREE.SRGBColorSpace;return t;}
+const materials={};
+for(const name of ['Frame','Inside','Keys']){
+  const map=texture(`T_${name}_ALB`,true),normal=texture(`T_${name}_NRM`),rma=texture(`T_${name}_RMA`);
+  // Keep every channel of the source RMA image intact: R = roughness, G = metal, B = AO.
+  const material=new THREE.MeshStandardMaterial({name,map,normalMap:normal,normalScale:new THREE.Vector2(1,-1),roughnessMap:rma,metalnessMap:rma,aoMap:rma,aoMapIntensity:1,roughness:1,metalness:1,envMapIntensity:.65});
+  material.onBeforeCompile=shader=>{
+    shader.fragmentShader=shader.fragmentShader
+      .replace('#include <roughnessmap_fragment>',THREE.ShaderChunk.roughnessmap_fragment.replace('texelRoughness.g','texelRoughness.r'))
+      .replace('#include <metalnessmap_fragment>',THREE.ShaderChunk.metalnessmap_fragment.replace('texelMetalness.b','texelMetalness.g'))
+      .replace('#include <aomap_fragment>',THREE.ShaderChunk.aomap_fragment.replace('vAoMapUv ).r','vAoMapUv ).b'));
+  };
+  material.customProgramCacheKey=()=> 'original-rma-r-g-b-v1';
+  materials[name]=material;
+}
 const modelPromise=new GLTFLoader().loadAsync('./assets/typewriter.glb');
 manager.onProgress=(url,done,total)=>{$('loading-text').innerHTML=`正在装好纸张与色带<span>${Math.round(done/total*100)}% · Preparing your Underwood…</span>`;};
 let texturesDone=false;const texturesPromise=new Promise((resolve,reject)=>{manager.onLoad=()=>{texturesDone=true;resolve();};manager.onError=url=>reject(new Error(`资源未能载入：${url}`));});
