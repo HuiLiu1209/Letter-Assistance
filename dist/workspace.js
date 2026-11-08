@@ -113,21 +113,38 @@ if(demoMode){$('diagram-provider').textContent='Sample letter';$('diagram-genera
 document.addEventListener('click',event=>{if(!event.target.closest('.model-picker')&&!modelMenu.contains(event.target))closeModelMenu();});
 document.addEventListener('keydown',event=>{if(event.key==='Escape')closeModelMenu();});
 const textMeasure=document.createElement('canvas').getContext('2d');
+let composerMotion=null,composerTargetHeight=0,composerTargetInputHeight=0;
 function syncSendState(){const ready=!!$('letter-request').value.trim()&&!busy;$('send-letter').classList.toggle('is-ready',ready);$('send-letter').disabled=busy||(!ready&&!demoMode);}
-function resizeInput(){
-  const input=$('letter-request'),form=$('letter-form'),wrap=document.querySelector('.composer-wrap'),style=getComputedStyle(input),formStyle=getComputedStyle(form),actions=document.querySelector('.composer-actions');
+function resizeInput(animate=true){
+  const input=$('letter-request'),form=$('letter-form'),style=getComputedStyle(input),formStyle=getComputedStyle(form),actions=document.querySelector('.composer-actions');
+  const currentHeight=form.getBoundingClientRect().height,currentInputHeight=input.getBoundingClientRect().height,wasExpanded=form.classList.contains('is-expanded');
+  const paddingX=parseFloat(formStyle.paddingLeft)+parseFloat(formStyle.paddingRight),paddingY=parseFloat(formStyle.paddingTop)+parseFloat(formStyle.paddingBottom),borders=parseFloat(formStyle.borderTopWidth)+parseFloat(formStyle.borderBottomWidth);
+  const innerWidth=form.clientWidth-paddingX,actionWidth=$('model-picker').getBoundingClientRect().width+$('send-letter').getBoundingClientRect().width+parseFloat(getComputedStyle(actions).columnGap),compactWidth=Math.max(40,innerWidth-actionWidth-20);
   textMeasure.font=`${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
-  const actionWidth=$('model-picker').getBoundingClientRect().width+$('send-letter').getBoundingClientRect().width+parseFloat(getComputedStyle(actions).columnGap);
-  const compactWidth=Math.min(600,window.innerWidth-32)-parseFloat(formStyle.paddingLeft)-parseFloat(formStyle.paddingRight)-actionWidth-20;
   const textWidth=Math.max(...input.value.split('\n').map(line=>textMeasure.measureText(line).width));
-  const threshold=form.classList.contains('is-expanded') ? .72 : .88;
-  const expanded=matchMedia('(max-width:700px)').matches||input.value.includes('\n')||textWidth>Math.max(40,compactWidth)*threshold;
-  form.classList.toggle('is-expanded',expanded);wrap.classList.toggle('is-expanded',expanded);
-  input.style.height='0px';input.style.height=`${Math.min(parseFloat(style.maxHeight),Math.max(parseFloat(style.lineHeight),input.scrollHeight))}px`;
+  const expanded=matchMedia('(max-width:700px)').matches||input.value.includes('\n')||textWidth>compactWidth*(wasExpanded ? .72 : .88);
+  form.classList.toggle('is-expanded',expanded);
+  // Measure once at the final text width; never scale glyphs or animate the outer width.
+  input.style.width=`${expanded?innerWidth:compactWidth}px`;input.style.height='0px';
+  const inputHeight=Math.min(parseFloat(style.maxHeight),Math.max(parseFloat(style.lineHeight),input.scrollHeight));
+  input.style.height=`${currentInputHeight}px`;
+  const actionHeight=actions.getBoundingClientRect().height,targetHeight=Math.max(56,paddingY+borders+(expanded?inputHeight+14+actionHeight:Math.max(inputHeight,actionHeight)));
+  const changed=wasExpanded!==expanded||Math.abs(targetHeight-composerTargetHeight)>.1||Math.abs(inputHeight-composerTargetInputHeight)>.1;
+  if(changed||!animate){
+    const initialized=composerTargetHeight>0;composerTargetHeight=targetHeight;composerTargetInputHeight=inputHeight;composerMotion?.kill();gsap.killTweensOf([form,input]);input.style.clipPath='none';
+    if(animate&&initialized&&!reducedMotion()){
+      form.dataset.resizeState='animating';form.dataset.targetHeight=String(targetHeight);
+      gsap.set(form,{height:currentHeight});gsap.set(input,{height:currentInputHeight});
+      composerMotion=gsap.timeline({onComplete:()=>{form.dataset.resizeState='idle';input.style.clipPath='none';}});
+      composerMotion.to(form,{height:targetHeight,duration:.3,ease:'power3.out'},0).to(input,{height:inputHeight,duration:.3,ease:'power3.out'},0);
+      // Keep the newly available text area clear of the stationary controls while it lifts.
+      if(expanded&&!wasExpanded)composerMotion.fromTo(input,{clipPath:`inset(0 ${Math.max(0,innerWidth-compactWidth)}px 0 0)`},{clipPath:'inset(0 0px 0 0)',duration:.16,ease:'power2.out'},.1);
+    }else{gsap.set(form,{height:targetHeight});gsap.set(input,{height:inputHeight});form.dataset.resizeState='idle';form.dataset.targetHeight=String(targetHeight);}
+  }
   syncSendState();
 }
-window.addEventListener('resize',resizeInput);document.fonts.ready.then(resizeInput);
-$('letter-request').value=state.draft;resizeInput();
+window.addEventListener('resize',()=>resizeInput(false));document.fonts.ready.then(()=>resizeInput(false));
+$('letter-request').value=state.draft;resizeInput(false);
 $('letter-request').addEventListener('input',()=>{state.draft=$('letter-request').value;persist();resizeInput();});
 $('letter-request').addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing){event.preventDefault();if(!busy)$('letter-form').requestSubmit();}});
 $('letter-form').addEventListener('submit',async event=>{
