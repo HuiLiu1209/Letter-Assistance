@@ -1,0 +1,62 @@
+{
+  "bounds": {
+    "isBox3": true,
+    "min": {
+      "x": -28.196044921875,
+      "y": -8.536246127732738e-7,
+      "z": -37.34126663208008
+    },
+    "max": {
+      "x": 28.4759578704834,
+      "y": 32.35810852050781,
+      "z": 15.00933837890625
+    }
+  },
+  "children": [
+    {
+      "name": "Keyboard",
+      "vertices": 89352,
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "materials": [
+        {
+          "name": "Keys1",
+          "maps": []
+        }
+      ]
+    },
+    {
+      "name": "inner",
+      "vertices": 86142,
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "materials": [
+        {
+          "name": "Inside1",
+          "maps": []
+        }
+      ]
+    },
+    {
+      "name": "Frame",
+      "vertices": 25623,
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "materials": [
+        {
+          "name": "Frame1",
+          "maps": []
+        }
+      ]
+    }
+  ]
+}

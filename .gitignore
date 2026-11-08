@@ -1,0 +1,7 @@
+node_modules/
+source-assets/
+texture-contact.jpg
+*.tar.gz
+.DS_Store
+
+outputs/
