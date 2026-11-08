@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "buildCommand": "npm run check",
+  "outputDirectory": "dist",
+  "functions": {
+    "api/chat.js": {
+      "maxDuration": 60
+    }
+  }
+}

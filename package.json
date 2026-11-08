@@ -2,6 +2,16 @@
   "name": "a-typed-note",
   "private": true,
   "type": "module",
-  "scripts": {"start":"node server.mjs", "check":"node --check dist/app.js"},
-  "dependencies": {"three": "0.170.0"}
+  "scripts": {
+    "start": "node server.mjs",
+    "check": "node --check dist/app.js && node --check dist/paper.js && node --check dist/workspace.js && node --check server.mjs && node --check src/server/chat.mjs",
+    "test": "node --test tests/*.test.mjs"
+  },
+  "dependencies": {
+    "gsap": "3.15.1",
+    "three": "0.170.0"
+  },
+  "engines": {
+    "node": ">=22"
+  }
 }

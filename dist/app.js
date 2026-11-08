@@ -1,8 +1,9 @@
 import * as THREE from 'three';
 import { OrbitControls } from './vendor/OrbitControls.js';
 import { GLTFLoader } from './vendor/GLTFLoader.js';
+import { createPaperPrinter } from './paper.js';
 
-// This version is entirely a scene study. No writing UI, added paper or key animation.
+// The approved scene stays unchanged at rest. Printing adds a separate paper mesh.
 const host=document.getElementById('scene');
 const status=document.getElementById('status');
 const scene=new THREE.Scene();
@@ -26,7 +27,7 @@ controls.target.set(0,1.7,0);
 const initialDirection=new THREE.Vector3(-.61,.49,.79).normalize();
 camera.position.copy(initialDirection).multiplyScalar(16).add(controls.target);
 controls.update();
-let model=null,lastFitDistance=null;
+let model=null,lastFitDistance=null,paperPrinter=null;
 
 // Three reflection cards correspond to the three actual studio lights below.
 // The surrounding environment stays dark, preserving the original dark paint.
@@ -154,9 +155,9 @@ function fitToModel(preserveZoom=false){
   lastFitDistance=distance;camera.position.copy(direction).multiplyScalar(distance*zoom).add(controls.target);
   controls.minDistance=distance*.55;controls.maxDistance=distance*2.2;controls.update();
 }
-function resize(){const {width,height}=host.getBoundingClientRect();camera.aspect=width/height;camera.updateProjectionMatrix();renderer.setSize(width,height);fitToModel(true);}
+function resize(){const {width,height}=host.getBoundingClientRect();camera.aspect=width/height;camera.updateProjectionMatrix();renderer.setSize(width,height);if(paperPrinter?.visible)paperPrinter.resize();else fitToModel(true);}
 new ResizeObserver(resize).observe(host);resize();
-Promise.all([modelReady,texturesReady]).then(([gltf])=>{
+export const printerReady=Promise.all([modelReady,texturesReady]).then(([gltf])=>{
   model=gltf.scene;
   model.traverse(o=>{if(!o.isMesh)return;o.material=materials[o.material.name]||materials.Frame;
     if(o.geometry.attributes.uv&&!o.geometry.attributes.uv1)o.geometry.setAttribute('uv1',o.geometry.attributes.uv);
@@ -165,5 +166,7 @@ Promise.all([modelReady,texturesReady]).then(([gltf])=>{
   scene.add(model);fitToModel();
   renderer.render(scene,camera);document.body.classList.add('ready');
   status.textContent='打字机场景已准备好。';host.dataset.ready='true';
-}).catch(error=>{console.error(error);document.body.classList.add('failed');status.textContent='模型未能载入，请刷新重试。';});
+  paperPrinter=createPaperPrinter({scene,model,camera,controls,restoreView:()=>fitToModel()});
+  return paperPrinter;
+}).catch(error=>{console.error(error);document.body.classList.add('failed');status.textContent='模型未能载入，请刷新重试。';throw error;});
 function render(){requestAnimationFrame(render);controls.update();renderer.render(scene,camera);}render();

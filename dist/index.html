@@ -1,18 +1,77 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#080808">
-  <meta name="description" content="An Underwood typewriter, red cloth and three warm studio lights.">
-  <title>Underwood</title>
+  <meta name="description" content="A quiet place to write a letter, with an Underwood typewriter.">
+  <title>Letter Assistance</title>
   <link rel="stylesheet" href="./style.css">
+  <link rel="stylesheet" href="./workspace.css">
   <script type="importmap">{"imports":{"three":"./vendor/three.module.js"}}</script>
+  <script src="./vendor/gsap.min.js" defer></script>
 </head>
 <body>
-  <main id="scene" aria-label="暖光下的 Underwood 打字机，置于红色桌布上。拖动旋转，滚轮缩放。"></main>
+  <main id="scene" aria-label="Underwood typewriter on a red cloth. Drag to rotate; scroll to zoom."></main>
   <div id="loading" aria-hidden="true"><span></span></div>
-  <p id="status" class="sr-only" role="status" aria-live="polite">正在载入打字机。</p>
-  <script type="module" src="./app.js"></script>
+  <p id="status" class="sr-only" role="status" aria-live="polite">Loading the typewriter.</p>
+  <div class="workspace">
+    <nav class="sidebar" aria-label="Letter workspace">
+      <section class="side-card" id="instructions-card">
+        <button class="section-toggle" id="instructions-toggle" aria-expanded="false" aria-controls="instructions-panel">
+          <img class="icon" src="./assets/ui/notepad.svg" alt=""><span id="instructions-label">Instructions</span><img class="caret" src="./assets/ui/caret-down.svg" alt="">
+        </button>
+        <div class="fold" id="instructions-panel" inert><div class="fold-inner role-list">
+          <button class="new-role" id="new-role"><img src="./assets/ui/pencil-simple.svg" alt="">New Role Card</button>
+          <div class="role-group"><h2>Preset</h2><div id="preset-list"></div></div>
+          <div class="role-group"><h2>Custom</h2><div id="custom-list"></div></div>
+        </div></div>
+      </section>
+      <section class="side-card" id="letters-card">
+        <button class="section-toggle" id="letters-toggle" aria-expanded="false" aria-controls="letters-panel">
+          <img class="icon" src="./assets/ui/chat.svg" alt=""><span>Letters</span><img class="caret" src="./assets/ui/caret-down.svg" alt="">
+        </button>
+        <div class="fold" id="letters-panel" inert><div class="fold-inner saved-letters" id="letter-list"></div></div>
+      </section>
+      <button class="side-card section-toggle" id="system-diagram"><img class="icon" src="./assets/ui/intersect-square.svg" alt=""><span>System Diagram</span></button>
+    </nav>
+    <div class="composer-wrap">
+      <p class="composer-notice" id="composer-notice" role="status" aria-live="polite" hidden></p>
+      <form class="composer" id="letter-form">
+        <label class="sr-only" for="letter-request">Describe the letter you want to write</label>
+        <textarea id="letter-request" rows="1" maxlength="6000" placeholder="Work with Thank-You Letter" required></textarea>
+        <div class="composer-actions">
+          <button class="model-picker" id="model-picker" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="model-menu"><span>Gemini 3.5 Flash-Lite</span><img class="caret" src="./assets/ui/caret-down.svg" alt=""></button>
+          <button class="send" id="send-letter" type="submit" aria-label="Write letter"><img src="./assets/ui/arrow-up.svg" alt=""></button>
+        </div>
+      </form>
+      <div class="model-menu" id="model-menu" hidden><button type="button" aria-pressed="true">Gemini 3.5 Flash-Lite <span>Selected</span></button></div>
+    </div>
+  </div>
+  <dialog id="role-dialog" class="workspace-dialog">
+    <form id="role-form">
+      <header class="dialog-header"><h1 id="role-dialog-title">Role Card</h1><button class="close-dialog" type="button" aria-label="Close role card">×</button></header>
+      <div class="dialog-body role-fields" id="role-fields"></div>
+      <footer class="dialog-footer"><p id="role-error" role="alert"></p><button type="submit" class="primary-button" id="save-role">Save & use</button></footer>
+    </form>
+  </dialog>
+  <dialog id="letter-dialog" class="workspace-dialog letter-dialog">
+    <header class="dialog-header"><div><h1 id="letter-title"></h1><p id="letter-meta"></p></div><button class="close-dialog" type="button" aria-label="Close letter">×</button></header>
+    <article class="letter-paper" id="letter-text" aria-label="Saved letter, read only"></article>
+  </dialog>
+  <dialog id="diagram-dialog" class="workspace-dialog diagram-dialog">
+    <header class="dialog-header"><h1>System Diagram</h1><button class="close-dialog" type="button" aria-label="Close system diagram">×</button></header>
+    <div class="dialog-body">
+      <p class="diagram-intro">You provide the intent. The role sets the boundaries. AI writes the letter.</p>
+      <ol class="system-flow">
+        <li><span class="flow-label">You</span><strong>Letter request</strong><p>Recipient, facts, tone and language.</p></li>
+        <li><span class="flow-label">Instructions</span><strong id="diagram-role">Thank-You Letter</strong><p>The selected Role Card becomes the system instruction.</p></li>
+        <li><span class="flow-label">Gemini</span><strong>Write the letter</strong><p>Uses your request and the Role Card. No invented facts or follow-up chat.</p></li>
+        <li><span class="flow-label">Typewriter → Letters</span><strong>Print & save</strong><p>The finished letter prints on paper and is saved on this browser for viewing only.</p></li>
+      </ol>
+      <p class="diagram-note">The assistant writes letters. It does not send them. Your saved letters and custom Role Cards stay in this browser; generating a letter sends that request and Role Card to Google.</p>
+    </div>
+  </dialog>
+  <script type="module" src="./workspace.js"></script>
 </body>
 </html>

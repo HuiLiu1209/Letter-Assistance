@@ -5,3 +5,7 @@ texture-contact.jpg
 .DS_Store
 
 outputs/
+
+.env
+.env.*
+!.env.example
