@@ -1,26 +1,18 @@
 <!doctype html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#eeeae2">
-  <meta name="description" content="An interactive Underwood typewriter. A small space for words, paper and the sound of a thought taking shape.">
-  <title>A Typed Note — 交互打字机</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#080808">
+  <meta name="description" content="An Underwood typewriter, red cloth and three warm studio lights.">
+  <title>Underwood</title>
   <link rel="stylesheet" href="./style.css">
   <script type="importmap">{"imports":{"three":"./vendor/three.module.js"}}</script>
 </head>
 <body>
-  <header class="topbar"><a class="brand" href="./" aria-label="A Typed Note 首页"><span class="brand-mark">a.</span><span>A TYPED NOTE<span class="brand-sub">一封慢慢写的信</span></span></a><div class="edition">UNDERWOOD<span class="edition-dot"></span>INTERACTIVE STUDY / 01</div><button id="sound" class="quiet-button" aria-pressed="true"><span id="sound-icon">◖))</span><span id="sound-label">声音开启</span></button></header>
-  <main id="stage" aria-label="交互式三维打字机，可以拖动旋转、滚轮缩放">
-    <div class="intro"><p class="eyebrow">LESS HURRY. MORE FEELING.</p><h1>每一字，<br>都有回响。</h1><p class="intro-description">让想说的话，<br>落在一张真正有质感的纸上。</p></div>
-    <div id="canvas-host"></div>
-    <div class="loading" id="loading"><span class="loading-dot"></span><p id="loading-text">正在装好纸张与色带<span>Loading your Underwood…</span></p></div>
-    <div class="view-controls" aria-label="视角"><button class="view active" data-view="home">全景</button><button class="view" data-view="front">正面</button><button class="view" data-view="detail">机械细节</button><button class="view" data-view="paper">看信纸</button><button class="view" data-view="model">看原模型</button></div>
-    <div class="stage-caption"><span class="small-cross">+</span><span>DRAG TO EXPLORE<br><em>拖动旋转 · 滚轮缩放 · 点击按键</em></span></div>
-    <div class="paper-counter"><span id="char-count">000</span><span>CHARACTERS<br><em id="line-count">第 1 行 / 18 行</em></span></div>
-  </main>
-  <footer class="bottom-bar"><div class="typing-hint"><span class="live-dot"></span><span id="hint">直接用键盘，开始写吧。</span><kbd>Enter</kbd><span class="return-hint">回车换行</span></div><div class="actions"><button id="demo" class="text-button"><span class="play-icon">▷</span><span>看它写一封信</span></button><span class="divider"></span><button id="new-paper" class="text-button">换张纸 <span>↗</span></button><button id="download" class="primary-button">保存文字 <span>↓</span></button><button id="mobile-type" class="primary-button">开始打字</button></div></footer>
-  <textarea id="keyboard-input" aria-label="打字输入（支持中文输入法）" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
-  <p id="announcement" class="sr-only" role="status" aria-live="polite"></p>
+  <main id="scene" aria-label="暖光下的 Underwood 打字机，置于红色桌布上。拖动旋转，滚轮缩放。"></main>
+  <div id="loading" aria-hidden="true"><span></span></div>
+  <p id="status" class="sr-only" role="status" aria-live="polite">正在载入打字机。</p>
   <script type="module" src="./app.js"></script>
 </body>
 </html>

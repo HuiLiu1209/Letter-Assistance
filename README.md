@@ -1,30 +1,23 @@
-# A Typed Note
+# Underwood — scene study
 
-Interactive Underwood typewriter study using the user-supplied `Final Model and Textures.rar`.
+A full-window 3D Underwood typewriter on a dark red woven tablecloth, in a near-black environment with warm three-point studio lighting.
 
 ## Run
 
-`npm start` serves the standalone website at http://127.0.0.1:4173.
-The deployable output is already in `dist/`; it needs no build, CDN or runtime package installation.
+`npm start` serves the website at http://127.0.0.1:4173. The deployable output is already in `dist/`; no build is needed.
 
-## Features
+## Current scope
 
-- Real keyboard and clickable 3D keys, Chinese input, Enter, Backspace and paste.
-- Independent key travel, typebar strike, animated carriage and paper feed.
-- Synthesized key, return and margin-bell sounds; sound toggle.
-- Orbit/zoom, front/mechanism/paper views, letter demo, new paper and text download.
-- Maximum 18 lines per sheet. Content lives in memory and clears on reload.
+The screen contains only the typewriter and its environment. There are no headings, menus, action buttons, writing controls, sound effects, extra paper, character counters or AI functions. Dragging and scrolling move the viewing camera. Functions will be reconsidered after the scene direction is approved.
 
-## Assets
+The three light roles are a broad warm main light, a narrow contour light, and an upper-right accent targeting the carriage/backplate. Reflection cards correspond to those same three lights. The cloth has a generated weave, a continuous rounded table edge and hanging folds, with shadows from the real model.
 
-Original source: `source-assets/Final Model and Textures/SM_Typewriter_01.fbx` and nine 4096px TGA textures, supplied by the user. The archive's Substance Painter project was not extracted because it is unnecessary for playback. Original archive and textures are unchanged.
+## Model and textures
 
-`scripts/prepare-model.mjs` separates disconnected geometry into keys, typebars and carriage groups, normalizes coordinates and exports an indexed GLB. 47 key groups and 43 typebar groups are individually animated. Motion is a visual approximation, not a mechanically exact linkage simulation.
+The supplied Underwood geometry and all nine original 4096×4096 texture images are unchanged by this scene redesign. Original source is retained under ignored `source-assets/`. The source archive's Substance Painter project is not needed for playback and was not extracted.
 
-Textures retain the supplied 4096×4096 RGB texels. `scripts/prepare-textures.py` changes only the container from TGA to lossless PNG and verifies all nine decoded images are pixel-identical. The original RMA channels stay intact; the material shader reads R as roughness, G as metalness and B as AO. Base color uses sRGB, data maps use no color-space transform, and DirectX normals use an inverted green component. A low-fill studio environment replaces the earlier white room, with separate warm key and cool rim lights. The original-model view hides only the added paper and uses a dark background.
+`scripts/prepare-model.mjs` previously exported the FBX as an indexed GLB with normalized coordinates and separated disconnected components. This scene loads those components in their original resting positions; no key or carriage animations are applied.
 
-Third-party assets: Three.js 0.170.0, MIT license, retained at `dist/vendor/THREE-LICENSE.txt`. The model is user-supplied; this project does not claim ownership or attach a new license to it. Code is original, using the Spline example as an interaction reference; no Spline source or assets were copied.
+`scripts/prepare-textures.py` changes only the TGA container to lossless PNG, verifying all nine decoded images are pixel-identical. Original RMA channels remain intact; shaders read R for roughness, G for metalness and B for ambient occlusion. Base color uses sRGB, data maps have no color-space transform, and DirectX normals invert green in the material.
 
-## Implementation limits
-
-Paper printing is a dynamic canvas texture. Chinese characters appear on the paper but do not have matching physical keycaps. The source FBX has three merged meshes and no original rig; components were separated geometrically. Carriage and linkage animations are approximate. No AI service is connected.
+Three.js 0.170.0 is used under MIT, with its license retained at `dist/vendor/THREE-LICENSE.txt`. The user-supplied model retains its own ownership and licensing. No Spline assets or code were copied.

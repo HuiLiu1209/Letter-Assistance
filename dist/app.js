@@ -2,92 +2,168 @@ import * as THREE from 'three';
 import { OrbitControls } from './vendor/OrbitControls.js';
 import { GLTFLoader } from './vendor/GLTFLoader.js';
 
-const $=id=>document.getElementById(id);
-const host=$('canvas-host'), stage=$('stage'), input=$('keyboard-input');
+// This version is entirely a scene study. No writing UI, added paper or key animation.
+const host=document.getElementById('scene');
+const status=document.getElementById('status');
 const scene=new THREE.Scene();
-const camera=new THREE.PerspectiveCamera(36,1,.1,150);
-const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});
+scene.background=new THREE.Color(0x080808);
+const camera=new THREE.PerspectiveCamera(34,1,.1,120);
+const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance',preserveDrawingBuffer:true});
 renderer.setPixelRatio(Math.min(devicePixelRatio,2));
-renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
-renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=.86;
-host.appendChild(renderer.domElement);renderer.domElement.setAttribute('aria-label','Underwood 三维打字机，拖动可旋转，点击按键可打字');
-// A dark studio with isolated softboxes preserves contrast in the supplied PBR maps.
-const studio=new THREE.Scene();studio.background=new THREE.Color(0x080b10);
-const softbox=(position,size,intensity,color)=>{const m=new THREE.Mesh(new THREE.PlaneGeometry(...size),new THREE.MeshBasicMaterial({color:new THREE.Color(color).multiplyScalar(intensity),side:THREE.DoubleSide}));m.position.set(...position);m.lookAt(0,1,0);studio.add(m);};
-softbox([-5,7,5],[4,6],10,0xffe5c6);
-softbox([6,4,-3],[3,7],8,0xd0e0ff);
-softbox([0,8,-1],[5,3],4,0xffffff);
-softbox([-2,2,-6],[2,5],2,0xffbd89);
-const pmrem=new THREE.PMREMGenerator(renderer);scene.environment=pmrem.fromScene(studio,.03).texture;
+renderer.outputColorSpace=THREE.SRGBColorSpace;
+renderer.toneMapping=THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure=.95;
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFShadowMap;
+host.appendChild(renderer.domElement);
+renderer.domElement.setAttribute('aria-label','Underwood 三维打字机，红色桌布和暖色三点打光。拖动查看模型。');
+
+const controls=new OrbitControls(camera,renderer.domElement);
+controls.enableDamping=true;controls.dampingFactor=.065;
+controls.enablePan=false;controls.rotateSpeed=.65;controls.zoomSpeed=.65;
+controls.minPolarAngle=.28;controls.maxPolarAngle=Math.PI*.48;
+controls.target.set(0,1.7,0);
+const initialDirection=new THREE.Vector3(-.61,.49,.79).normalize();
+camera.position.copy(initialDirection).multiplyScalar(16).add(controls.target);
+controls.update();
+let model=null,lastFitDistance=null;
+
+// Three reflection cards correspond to the three actual studio lights below.
+// The surrounding environment stays dark, preserving the original dark paint.
+const studio=new THREE.Scene();studio.background=new THREE.Color(0x030303);
+function reflectionCard(position,target,size,radiance,color){
+  const card=new THREE.Mesh(new THREE.PlaneGeometry(...size),new THREE.MeshBasicMaterial({color:new THREE.Color(color).multiplyScalar(radiance),side:THREE.DoubleSide}));
+  card.position.set(...position);card.lookAt(new THREE.Vector3(...target));studio.add(card);
+}
+reflectionCard([-5,9,6],[0,1.6,0],[6,7],3,0xffd9ab); // broad warm key
+reflectionCard([-6,4,-5],[0,2,0],[1.3,7],2.2,0xffd09c); // narrow rim
+reflectionCard([3,8,0],[.9,3.4,-1.7],[2.2,2.2],5,0xffc481); // focused highlight
+const pmrem=new THREE.PMREMGenerator(renderer);
+scene.environment=pmrem.fromScene(studio,.025).texture;
 studio.traverse(o=>{if(o.isMesh){o.geometry.dispose();o.material.dispose();}});pmrem.dispose();
-const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.dampingFactor=.065;controls.enablePan=false;controls.minDistance=8;controls.maxDistance=25;controls.maxPolarAngle=Math.PI*.49;controls.minPolarAngle=.25;
-const look=new THREE.Vector3(0,2.8,0);
-camera.position.set(8.3,7.6,13.8);controls.target.copy(look);controls.update();
-const hemi=new THREE.HemisphereLight(0xc3d2e1,0x17110c,.16);scene.add(hemi);
-const keyLight=new THREE.DirectionalLight(0xffe7ce,2.8);keyLight.position.set(-5,9,7);keyLight.castShadow=true;keyLight.shadow.mapSize.set(2048,2048);Object.assign(keyLight.shadow.camera,{left:-11,right:11,top:11,bottom:-11,near:1,far:35});keyLight.shadow.normalBias=.025;keyLight.shadow.bias=-.0002;keyLight.shadow.radius=4;scene.add(keyLight);
-const rim=new THREE.DirectionalLight(0xc7ddff,1.8);rim.position.set(6,5,-5);scene.add(rim);
-const floor=new THREE.Mesh(new THREE.PlaneGeometry(200,200),new THREE.ShadowMaterial({color:0x4d4435,opacity:.18}));floor.rotation.x=-Math.PI/2;floor.position.y=-.02;floor.receiveShadow=true;scene.add(floor);
-const shadowCanvas=document.createElement('canvas');shadowCanvas.width=shadowCanvas.height=128;const sh=shadowCanvas.getContext('2d'),grad=sh.createRadialGradient(64,64,10,64,64,64);grad.addColorStop(0,'rgba(42,34,20,.35)');grad.addColorStop(.6,'rgba(42,34,20,.15)');grad.addColorStop(1,'rgba(42,34,20,0)');sh.fillStyle=grad;sh.fillRect(0,0,128,128);const shadow=new THREE.Mesh(new THREE.PlaneGeometry(10,9),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(shadowCanvas),transparent:true,depthWrite:false}));shadow.rotation.x=-Math.PI/2;shadow.position.y=.005;scene.add(shadow);
 
-const machine=new THREE.Group(),carriage=new THREE.Group();scene.add(machine);machine.add(carriage);
-const keys=[],bars=[],active=new Map(),keyMap=new Map();let loaded=false,text='',soundEnabled=true,audio=null,demoTimer=null,writing=false,frameTarget=null,paperLift=0;
-const pageWidth=1400,pageHeight=1040,maxCols=44,maxLines=18;
-const paperCanvas=document.createElement('canvas');paperCanvas.width=pageWidth;paperCanvas.height=pageHeight;const ctx=paperCanvas.getContext('2d');
-const paperTexture=new THREE.CanvasTexture(paperCanvas);paperTexture.colorSpace=THREE.SRGBColorSpace;paperTexture.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
-const paperGeo=new THREE.PlaneGeometry(5.25,3.9,40,64);const pp=paperGeo.attributes.position;for(let i=0;i<pp.count;i++){let y=pp.getY(i);const normalized=(y+1.95)/3.9;pp.setXYZ(i,pp.getX(i),3.08+normalized*3.85,-1.84-.38*normalized-Math.sin(normalized*Math.PI)*.12);}paperGeo.computeVertexNormals();
-const paper=new THREE.Mesh(paperGeo,new THREE.MeshBasicMaterial({map:paperTexture,side:THREE.DoubleSide,toneMapped:false}));paper.castShadow=true;paper.receiveShadow=true;carriage.add(paper);
-const paperGrain=document.createElement('canvas');paperGrain.width=pageWidth;paperGrain.height=pageHeight;const pg=paperGrain.getContext('2d');pg.fillStyle='#f7f1df';pg.fillRect(0,0,pageWidth,pageHeight);let seed=73;const rand=()=>{seed=(seed*16807)%2147483647;return seed/2147483647;};for(let i=0;i<70000;i++){pg.fillStyle=`rgba(130,105,67,${rand()*.07})`;pg.fillRect(rand()*pageWidth,rand()*pageHeight,1+rand(),1+rand());}
-function layout(value){const lines=[''];let col=0;for(const char of value){if(char==='\n'){lines.push('');col=0;continue;}const w=/[^\x00-\xff]/.test(char)?2:1;if(col+w>maxCols){lines.push('');col=0;}lines[lines.length-1]+=char;col+=w;}return{lines,col};}
-function paintPaper(){ctx.clearRect(0,0,pageWidth,pageHeight);ctx.drawImage(paperGrain,0,0);ctx.fillStyle='#9b947f';ctx.textAlign='left';ctx.font='18px "Courier New", monospace';ctx.fillText('A TYPED NOTE',112,98);ctx.textAlign='right';ctx.fillText('01',1288,98);ctx.strokeStyle='#aaa08a45';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(112,130);ctx.lineTo(1288,130);ctx.stroke();ctx.fillStyle='#35352f';ctx.textAlign='left';ctx.textBaseline='alphabetic';ctx.font='38px "Courier New", "Songti SC", "Noto Serif SC", serif';const {lines,col}=layout(text);lines.forEach((line,i)=>{let x=112;for(const char of line){ctx.save();ctx.globalAlpha=.79+(char.charCodeAt(0)%11)/65;ctx.fillText(char,x,214+i*43);ctx.restore();x+=/[^\x00-\xff]/.test(char)?51:25.5;}});paperTexture.needsUpdate=true;$('char-count').textContent=String([...text.replace(/\n/g,'')].length).padStart(3,'0');$('line-count').textContent=`第 ${lines.length} 行 / ${maxLines} 行`;carriage.userData.targetX=1.05-col*.048;paper.userData.feed=Math.max(0,(lines.length-6)*.045);return{lines,col};}
-paintPaper();carriage.position.x=1.05;
+// 1. Large main light: the broad front/left face and warm tabletop shadows.
+const key=new THREE.SpotLight(0xffd8aa,185,36,.79,.85,2);
+key.position.set(-5,9,6);key.target.position.set(0,1.45,0);
+key.castShadow=true;key.shadow.mapSize.set(4096,4096);
+key.shadow.camera.near=.5;key.shadow.camera.far=32;
+key.shadow.normalBias=.012;key.shadow.bias=-.00008;key.shadow.radius=3;
+scene.add(key,key.target);
+// 2. Narrow rear light: warm contours on the frame, feet and carriage edges.
+const rim=new THREE.SpotLight(0xffd09c,100,30,.56,.8,2);
+rim.position.set(-6,4,-5);rim.target.position.set(0,1.9,0);
+rim.castShadow=true;rim.shadow.mapSize.set(2048,2048);
+rim.shadow.camera.near=.5;rim.shadow.camera.far=24;
+rim.shadow.normalBias=.018;rim.shadow.bias=-.0001;rim.shadow.radius=2;
+scene.add(rim,rim.target);
+// 3. Tight upper-right light: the upper backplate and roller get the focal highlight.
+const accent=new THREE.SpotLight(0xffc488,115,25,.34,.85,2);
+accent.position.set(3.4,7,1);accent.target.position.set(1.3,3.7,-2.65);
+accent.castShadow=true;accent.shadow.mapSize.set(2048,2048);
+accent.shadow.camera.near=.5;accent.shadow.camera.far=20;
+accent.shadow.normalBias=.012;accent.shadow.bias=-.00008;accent.shadow.radius=2;
+scene.add(accent,accent.target);
 
-function initAudio(){if(!soundEnabled)return;try{audio??=new(window.AudioContext||window.webkitAudioContext)();if(audio.state==='suspended')audio.resume();}catch{soundEnabled=false;}}
-function clack(kind='key'){if(!soundEnabled)return;initAudio();if(!audio)return;const now=audio.currentTime;if(kind==='bell'){const o=audio.createOscillator(),g=audio.createGain();o.type='sine';o.frequency.value=1470;o.connect(g);g.connect(audio.destination);g.gain.setValueAtTime(.07,now);g.gain.exponentialRampToValueAtTime(.0001,now+.85);o.start(now);o.stop(now+.9);return;}const len=kind==='return'?.23:.055,b=audio.createBuffer(1,Math.ceil(audio.sampleRate*len),audio.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++){const t=i/audio.sampleRate,envelope=Math.exp(-t/(kind==='return'?.06:.009));d[i]=(Math.random()*2-1)*envelope*.48;}const s=audio.createBufferSource(),f=audio.createBiquadFilter(),g=audio.createGain();s.buffer=b;f.type='bandpass';f.frequency.value=kind==='return'?620:1800+Math.random()*700;f.Q.value=.6;g.gain.value=.4;s.connect(f);f.connect(g);g.connect(audio.destination);s.start(now);const o=audio.createOscillator(),og=audio.createGain();o.frequency.setValueAtTime(kind==='return'?170:330,now);o.frequency.exponentialRampToValueAtTime(90,now+.04);og.gain.setValueAtTime(.065,now);og.gain.exponentialRampToValueAtTime(.001,now+.045);o.connect(og);og.connect(audio.destination);o.start(now);o.stop(now+.05);}
-function strike(char){const lower=char.toLowerCase();const key=keyMap.get(lower)||keys[(char.codePointAt(0)||0)%Math.max(keys.length,1)];const t=performance.now();if(key)active.set(key,{time:t,kind:'key'});if(char!==' '&&bars.length){const bar=bars[(char.codePointAt(0)||0)%bars.length];active.set(bar,{time:t,kind:'bar'});}clack(char==='\n'?'return':'key');}
-function typeChar(char,{manual=false}={}){if(!loaded)return;if(manual)stopDemo();if(char==='Backspace'){text=[...text].slice(0,-1).join('');strike('Backspace');paintPaper();return;}if(char==='Tab')char='    ';if(char==='Shift')return;const next=layout(text+char);if(next.lines.length>maxLines){$('hint').textContent='这张纸写满了，换张纸继续吧。';return;}text+=char;strike(char);const state=paintPaper();if(state.col===maxCols-5)clack('bell');$('hint').textContent='正在写下你的话。';$('announcement').textContent=`已输入 ${[...text].length} 字符`;}
-function stopDemo(){if(demoTimer)clearTimeout(demoTimer);demoTimer=null;writing=false;$('demo').querySelector('span:last-child').textContent='看它写一封信';}
-function newPaper(){stopDemo();text='';paintPaper();paperLift=2.4;$('hint').textContent='新的一页，新的开始。';$('announcement').textContent='已换上新纸';}
-const demoText='Dear you,\n\nTake a breath.\nSome things are worth slowing down for.\n\nA thought. A memory.\nA letter you have been meaning to write.\n\nLet it find its way onto this page.\nOne letter at a time.\n\nYours,\nA little less hurried.';
-$('demo').addEventListener('click',()=>{initAudio();if(writing){stopDemo();return;}newPaper();writing=true;$('demo').querySelector('span:last-child').textContent='暂停书写';let i=0;const chars=[...demoText];const step=()=>{if(!writing)return;if(i>=chars.length){stopDemo();$('hint').textContent='一封信，写好了。';return;}const c=chars[i++];typeChar(c);demoTimer=setTimeout(step,c==='\n'?430:c===' '?100:65+Math.random()*65);};demoTimer=setTimeout(step,450);});
-$('new-paper').addEventListener('click',()=>{newPaper();initAudio();clack('return');});
-$('sound').addEventListener('click',()=>{soundEnabled=!soundEnabled;$('sound').setAttribute('aria-pressed',String(soundEnabled));$('sound-label').textContent=soundEnabled?'声音开启':'声音关闭';$('sound-icon').textContent=soundEnabled?'◖))':'◖×';if(soundEnabled){initAudio();clack();}});
-$('download').addEventListener('click',()=>{const blob=new Blob([text],{type:'text/plain;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='a-typed-note.txt';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);});
-function focusInput(){input.focus({preventScroll:true});initAudio();}
-$('mobile-type').addEventListener('click',focusInput);
-let composing=false,suppressInput=false;
-input.addEventListener('compositionstart',()=>{composing=true;});
-input.addEventListener('compositionend',e=>{composing=false;suppressInput=true;for(const c of e.data||'')typeChar(c,{manual:true});input.value='';setTimeout(()=>{suppressInput=false;},0);});
-input.addEventListener('input',()=>{if(composing||suppressInput)return;for(const c of input.value)typeChar(c,{manual:true});input.value='';});
-window.addEventListener('keydown',e=>{if(e.isComposing||composing||e.metaKey||e.ctrlKey||e.altKey)return;if(document.activeElement?.tagName==='BUTTON'&&['Enter',' '].includes(e.key))return;if(e.key==='Enter'){e.preventDefault();typeChar('\n',{manual:true});}else if(e.key==='Backspace'){e.preventDefault();typeChar('Backspace',{manual:true});}else if(e.key==='Tab'&&document.activeElement===input){e.preventDefault();typeChar('Tab',{manual:true});}else if(e.key.length===1){e.preventDefault();typeChar(e.key,{manual:true});}});
-input.addEventListener('paste',e=>{e.preventDefault();for(const c of e.clipboardData.getData('text/plain'))typeChar(c,{manual:true});});
+// A woven red cloth over a circular table. UVs stay in tabletop metres so that
+// the weave remains the same size across the flat top, rolled edge and hanging folds.
+function wovenTextures(){
+  const size=512,color=document.createElement('canvas'),height=document.createElement('canvas');
+  color.width=color.height=height.width=height.height=size;
+  const c=color.getContext('2d'),h=height.getContext('2d');
+  const rgb=c.createImageData(size,size),bump=h.createImageData(size,size);
+  let seed=1367;const random=()=>{seed=(seed*16807)%2147483647;return seed/2147483647;};
+  for(let y=0;y<size;y++)for(let x=0;x<size;x++){
+    const i=(y*size+x)*4,warp=Math.cos(x*Math.PI/4),weft=Math.cos(y*Math.PI/4);
+    const over=((x>>3)+(y>>3))%2,thread=over?warp*.62+weft*.22:weft*.62+warp*.22;
+    const variation=thread*.11+(random()-.5)*.10+Math.sin(x*.039+Math.sin(y*.017))*.025;
+    rgb.data[i]=Math.max(0,76*(1+variation));rgb.data[i+1]=Math.max(0,23*(1+variation));rgb.data[i+2]=Math.max(0,17*(1+variation));rgb.data[i+3]=255;
+    const raised=128+thread*42+(random()-.5)*11;
+    bump.data[i]=bump.data[i+1]=bump.data[i+2]=raised;bump.data[i+3]=255;
+  }
+  c.putImageData(rgb,0,0);h.putImageData(bump,0,0);
+  const albedo=new THREE.CanvasTexture(color),relief=new THREE.CanvasTexture(height);
+  albedo.colorSpace=THREE.SRGBColorSpace;
+  for(const t of [albedo,relief]){t.wrapS=t.wrapT=THREE.RepeatWrapping;t.anisotropy=Math.min(renderer.capabilities.getMaxAnisotropy(),16);t.repeat.set(8,8);}
+  return{albedo,relief};
+}
+const fabric=wovenTextures();
+const clothMaterial=new THREE.MeshPhysicalMaterial({map:fabric.albedo,bumpMap:fabric.relief,bumpScale:.006,roughness:.95,metalness:0,sheen:.24,sheenColor:new THREE.Color(0x713126),sheenRoughness:.86,side:THREE.DoubleSide,envMapIntensity:.12});
+function clothGeometry(){
+  const angular=256,rings=100,positions=[],uvs=[],indices=[];
+  for(let row=0;row<=rings;row++){
+    const t=row/rings;let radius,y;
+    if(t<.7){radius=t/.7*6.1;y=-.028;}
+    else if(t<.78){const a=(t-.7)/.08*Math.PI/2;radius=6.1+Math.sin(a)*.22;y=-.028-(1-Math.cos(a))*.22;}
+    else{const drop=(t-.78)/.22;radius=6.32+drop*.35;y=-.248-drop*2.35;}
+    for(let col=0;col<=angular;col++){
+      const a=col/angular*Math.PI*2;
+      const edge=THREE.MathUtils.smoothstep(radius,4.9,6.3),fall=THREE.MathUtils.smoothstep(t,.76,1);
+      const pleat=Math.sin(a*17+.65)*.075+Math.sin(a*29+1.8)*.035+Math.sin(a*9-.3)*.055;
+      const r=radius+pleat*fall;
+      const ripple=(Math.sin(a*5+radius*2.1)*.009+Math.sin(a*11-radius*2.6)*.006)*edge;
+      const seam=.012*Math.sin(a*3+radius*1.2)*edge;
+      const x=Math.cos(a)*r,z=Math.sin(a)*r;
+      const creaseDistance=z-4.35-.14*x;
+      const fold=t<.7?.085*Math.exp(-creaseDistance*creaseDistance/.075)-.023*Math.exp(-((creaseDistance-.34)**2)/.16):0;
+      positions.push(x,y+ripple+seam+fold,z);
+      uvs.push(.5+Math.cos(a)*radius/13.4,.5+Math.sin(a)*radius/13.4+(t>.78?(t-.78)*.9:0));
+    }
+  }
+  for(let row=0;row<rings;row++)for(let col=0;col<angular;col++){
+    const a=row*(angular+1)+col,b=a+angular+1;indices.push(a,a+1,b,b,a+1,b+1);
+  }
+  const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geo.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));geo.setIndex(indices);geo.computeVertexNormals();return geo;
+}
+const cloth=new THREE.Mesh(clothGeometry(),clothMaterial);cloth.castShadow=true;cloth.receiveShadow=true;scene.add(cloth);
 
-const views={home:{pos:[8.3,7.6,13.8],target:[0,2.8,0]},front:{pos:[0,7.5,15.8],target:[0,2.8,0]},detail:{pos:[5.4,6.9,7.4],target:[0,2.7,.25]},paper:{pos:[0,5.8,7.1],target:[.25,4.6,-1.9]},model:{pos:[6.8,8.8,10.2],target:[0,1.9,0]}};
-document.querySelectorAll('.view').forEach(b=>b.addEventListener('click',()=>{stage.classList.toggle('focus-view',b.dataset.view==='paper'||b.dataset.view==='detail');stage.classList.toggle('model-view',b.dataset.view==='model');paper.visible=b.dataset.view!=='model';document.querySelectorAll('.view').forEach(x=>x.classList.toggle('active',x===b));const v=views[b.dataset.view];frameTarget={pos:new THREE.Vector3(...v.pos),target:new THREE.Vector3(...v.target)};}));
-controls.addEventListener('start',()=>{frameTarget=null;document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));});
-const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2();let pointerStart=null;
-renderer.domElement.addEventListener('pointerdown',e=>{pointerStart=[e.clientX,e.clientY];});
-renderer.domElement.addEventListener('pointerup',e=>{if(!pointerStart||Math.hypot(e.clientX-pointerStart[0],e.clientY-pointerStart[1])>5)return;const rect=renderer.domElement.getBoundingClientRect();pointer.set((e.clientX-rect.left)/rect.width*2-1,-(e.clientY-rect.top)/rect.height*2+1);raycaster.setFromCamera(pointer,camera);const hit=raycaster.intersectObjects(keys,false)[0];if(hit){typeChar(hit.object.userData.char,{manual:true});}focusInput();});
-function resize(){const {width,height}=host.getBoundingClientRect();camera.aspect=width/height;camera.fov=width<680?48:36;camera.updateProjectionMatrix();renderer.setSize(width,height);if(width<680&&camera.position.length()<18)camera.position.multiplyScalar(1.12);}
-new ResizeObserver(resize).observe(host);resize();
-
-const manager=new THREE.LoadingManager();const tl=new THREE.TextureLoader(manager);
-function texture(name,color=false){const t=tl.load(`./assets/original-4k/${name}.png`);t.flipY=true;t.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());if(color)t.colorSpace=THREE.SRGBColorSpace;return t;}
+// Original 4096x4096 maps, with every source texel intact.
+const manager=new THREE.LoadingManager(),textureLoader=new THREE.TextureLoader(manager);
+function texture(name,srgb=false){
+  const t=textureLoader.load(`./assets/original-4k/${name}.png`);
+  t.flipY=true;t.anisotropy=Math.min(renderer.capabilities.getMaxAnisotropy(),16);
+  t.colorSpace=srgb?THREE.SRGBColorSpace:THREE.NoColorSpace;return t;
+}
 const materials={};
 for(const name of ['Frame','Inside','Keys']){
   const map=texture(`T_${name}_ALB`,true),normal=texture(`T_${name}_NRM`),rma=texture(`T_${name}_RMA`);
-  // Keep every channel of the source RMA image intact: R = roughness, G = metal, B = AO.
-  const material=new THREE.MeshStandardMaterial({name,map,normalMap:normal,normalScale:new THREE.Vector2(1,-1),roughnessMap:rma,metalnessMap:rma,aoMap:rma,aoMapIntensity:1,roughness:1,metalness:1,envMapIntensity:.65});
+  const material=new THREE.MeshStandardMaterial({name,map,normalMap:normal,normalScale:new THREE.Vector2(1,-1),roughnessMap:rma,metalnessMap:rma,aoMap:rma,aoMapIntensity:1,roughness:1,metalness:1,envMapIntensity:.35});
   material.onBeforeCompile=shader=>{
     shader.fragmentShader=shader.fragmentShader
       .replace('#include <roughnessmap_fragment>',THREE.ShaderChunk.roughnessmap_fragment.replace('texelRoughness.g','texelRoughness.r'))
       .replace('#include <metalnessmap_fragment>',THREE.ShaderChunk.metalnessmap_fragment.replace('texelMetalness.b','texelMetalness.g'))
       .replace('#include <aomap_fragment>',THREE.ShaderChunk.aomap_fragment.replace('vAoMapUv ).r','vAoMapUv ).b'));
   };
-  material.customProgramCacheKey=()=> 'original-rma-r-g-b-v1';
-  materials[name]=material;
+  material.customProgramCacheKey=()=> 'original-rma-r-g-b-v1';materials[name]=material;
 }
-const modelPromise=new GLTFLoader().loadAsync('./assets/typewriter.glb');
-manager.onProgress=(url,done,total)=>{$('loading-text').innerHTML=`正在装好纸张与色带<span>${Math.round(done/total*100)}% · Preparing your Underwood…</span>`;};
-let texturesDone=false;const texturesPromise=new Promise((resolve,reject)=>{manager.onLoad=()=>{texturesDone=true;resolve();};manager.onError=url=>reject(new Error(`资源未能载入：${url}`));});
-Promise.all([modelPromise,texturesPromise]).then(([gltf])=>{gltf.scene.traverse(o=>{if(!o.isMesh)return;const name=o.material.name;o.material=materials[name]||materials.Frame;if(o.geometry.attributes.uv&&!o.geometry.attributes.uv1)o.geometry.setAttribute('uv1',o.geometry.attributes.uv);o.castShadow=true;o.receiveShadow=true;if(o.userData.char){keys.push(o);keyMap.set(o.userData.char.toLowerCase(),o);o.userData.restY=o.position.y;}if(o.userData.bar){bars.push(o);o.userData.restRotation=o.rotation.clone();}});const children=[];gltf.scene.traverse(o=>{if(o.isMesh)children.push(o);});for(const child of children){if(child.userData.carriage)carriage.add(child);else machine.add(child);}loaded=true;$('loading').classList.add('hidden');$('announcement').textContent='打字机已准备好，可以开始打字';}).catch(e=>{console.error(e);$('loading-text').innerHTML='打字机资源未能载入<span>请刷新重试，或检查浏览器是否支持 WebGL。</span>';$('demo').disabled=true;});
-const clock=new THREE.Clock();function animate(){requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.05),now=performance.now();if(frameTarget){camera.position.lerp(frameTarget.pos,1-Math.exp(-dt*5));controls.target.lerp(frameTarget.target,1-Math.exp(-dt*5));if(camera.position.distanceTo(frameTarget.pos)<.01)frameTarget=null;}controls.update();carriage.position.x=THREE.MathUtils.damp(carriage.position.x,carriage.userData.targetX??1.05,15,dt);paperLift=THREE.MathUtils.damp(paperLift,0,5,dt);paper.position.y=paperLift+(paper.userData.feed||0);for(const [obj,a]of active){const elapsed=(now-a.time)/1000;if(a.kind==='key'){obj.position.y=obj.userData.restY-Math.sin(Math.min(elapsed/.16,1)*Math.PI)*.075;}else{const phase=Math.min(elapsed/.19,1);obj.rotation.x=obj.userData.restRotation.x-Math.sin(phase*Math.PI)*1.3;}if(elapsed>.2){if(a.kind==='key')obj.position.y=obj.userData.restY;else obj.rotation.copy(obj.userData.restRotation);active.delete(obj);}}renderer.render(scene,camera);}animate();
+manager.onProgress=(_,done,total)=>{status.textContent=`正在载入打字机与原始贴图，${Math.round(done/total*100)}%。`;};
+const texturesReady=new Promise((resolve,reject)=>{manager.onLoad=resolve;manager.onError=url=>reject(new Error(`Unable to load ${url}`));});
+const modelReady=new GLTFLoader().loadAsync('./assets/typewriter.glb');
+
+function fitToModel(preserveZoom=false){
+  if(!model)return;
+  const bounds=new THREE.Box3().setFromObject(model),direction=camera.position.clone().sub(controls.target).normalize();
+  const right=new THREE.Vector3().crossVectors(camera.up,direction).normalize(),up=new THREE.Vector3().crossVectors(direction,right);
+  const tanV=Math.tan(THREE.MathUtils.degToRad(camera.fov/2)),tanH=tanV*camera.aspect;
+  let distance=0;
+  for(const x of [bounds.min.x,bounds.max.x])for(const y of [bounds.min.y,bounds.max.y])for(const z of [bounds.min.z,bounds.max.z]){
+    const relative=new THREE.Vector3(x,y,z).sub(controls.target),depth=relative.dot(direction);
+    distance=Math.max(distance,Math.abs(relative.dot(right))/tanH+depth,Math.abs(relative.dot(up))/tanV+depth);
+  }
+  distance*=1.11;
+  const zoom=preserveZoom&&lastFitDistance?camera.position.distanceTo(controls.target)/lastFitDistance:1;
+  lastFitDistance=distance;camera.position.copy(direction).multiplyScalar(distance*zoom).add(controls.target);
+  controls.minDistance=distance*.55;controls.maxDistance=distance*2.2;controls.update();
+}
+function resize(){const {width,height}=host.getBoundingClientRect();camera.aspect=width/height;camera.updateProjectionMatrix();renderer.setSize(width,height);fitToModel(true);}
+new ResizeObserver(resize).observe(host);resize();
+Promise.all([modelReady,texturesReady]).then(([gltf])=>{
+  model=gltf.scene;
+  model.traverse(o=>{if(!o.isMesh)return;o.material=materials[o.material.name]||materials.Frame;
+    if(o.geometry.attributes.uv&&!o.geometry.attributes.uv1)o.geometry.setAttribute('uv1',o.geometry.attributes.uv);
+    o.castShadow=true;o.receiveShadow=true;
+  });
+  scene.add(model);fitToModel();
+  renderer.render(scene,camera);document.body.classList.add('ready');
+  status.textContent='打字机场景已准备好。';host.dataset.ready='true';
+}).catch(error=>{console.error(error);document.body.classList.add('failed');status.textContent='模型未能载入，请刷新重试。';});
+function render(){requestAnimationFrame(render);controls.update();renderer.render(scene,camera);}render();
