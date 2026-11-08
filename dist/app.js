@@ -12,7 +12,7 @@ const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-per
 renderer.setPixelRatio(Math.min(devicePixelRatio,2));
 renderer.outputColorSpace=THREE.SRGBColorSpace;
 renderer.toneMapping=THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure=.95;
+renderer.toneMappingExposure=1.05;
 renderer.shadowMap.enabled=true;
 renderer.shadowMap.type=THREE.PCFShadowMap;
 host.appendChild(renderer.domElement);
@@ -35,7 +35,7 @@ function reflectionCard(position,target,size,radiance,color){
   const card=new THREE.Mesh(new THREE.PlaneGeometry(...size),new THREE.MeshBasicMaterial({color:new THREE.Color(color).multiplyScalar(radiance),side:THREE.DoubleSide}));
   card.position.set(...position);card.lookAt(new THREE.Vector3(...target));studio.add(card);
 }
-reflectionCard([-5,9,6],[0,1.6,0],[6,7],3,0xffd9ab); // broad warm key
+reflectionCard([-5,9,6],[0,1.6,0],[6,7],4,0xffd9ab); // broad warm key
 reflectionCard([-6,4,-5],[0,2,0],[1.3,7],2.2,0xffd09c); // narrow rim
 reflectionCard([3,8,0],[.9,3.4,-1.7],[2.2,2.2],5,0xffc481); // focused highlight
 const pmrem=new THREE.PMREMGenerator(renderer);
@@ -43,21 +43,21 @@ scene.environment=pmrem.fromScene(studio,.025).texture;
 studio.traverse(o=>{if(o.isMesh){o.geometry.dispose();o.material.dispose();}});pmrem.dispose();
 
 // 1. Large main light: the broad front/left face and warm tabletop shadows.
-const key=new THREE.SpotLight(0xffd8aa,185,36,.79,.85,2);
+const key=new THREE.SpotLight(0xffd8aa,330,36,.79,.85,2);
 key.position.set(-5,9,6);key.target.position.set(0,1.45,0);
 key.castShadow=true;key.shadow.mapSize.set(4096,4096);
 key.shadow.camera.near=.5;key.shadow.camera.far=32;
 key.shadow.normalBias=.012;key.shadow.bias=-.00008;key.shadow.radius=3;
 scene.add(key,key.target);
 // 2. Narrow rear light: warm contours on the frame, feet and carriage edges.
-const rim=new THREE.SpotLight(0xffd09c,100,30,.56,.8,2);
+const rim=new THREE.SpotLight(0xffd09c,120,30,.56,.8,2);
 rim.position.set(-6,4,-5);rim.target.position.set(0,1.9,0);
 rim.castShadow=true;rim.shadow.mapSize.set(2048,2048);
 rim.shadow.camera.near=.5;rim.shadow.camera.far=24;
 rim.shadow.normalBias=.018;rim.shadow.bias=-.0001;rim.shadow.radius=2;
 scene.add(rim,rim.target);
 // 3. Tight upper-right light: the upper backplate and roller get the focal highlight.
-const accent=new THREE.SpotLight(0xffc488,115,25,.34,.85,2);
+const accent=new THREE.SpotLight(0xffc488,175,25,.34,.85,2);
 accent.position.set(3.4,7,1);accent.target.position.set(1.3,3.7,-2.65);
 accent.castShadow=true;accent.shadow.mapSize.set(2048,2048);
 accent.shadow.camera.near=.5;accent.shadow.camera.far=20;
@@ -126,7 +126,7 @@ function texture(name,srgb=false){
 const materials={};
 for(const name of ['Frame','Inside','Keys']){
   const map=texture(`T_${name}_ALB`,true),normal=texture(`T_${name}_NRM`),rma=texture(`T_${name}_RMA`);
-  const material=new THREE.MeshStandardMaterial({name,map,normalMap:normal,normalScale:new THREE.Vector2(1,-1),roughnessMap:rma,metalnessMap:rma,aoMap:rma,aoMapIntensity:1,roughness:1,metalness:1,envMapIntensity:.35});
+  const material=new THREE.MeshStandardMaterial({name,map,normalMap:normal,normalScale:new THREE.Vector2(1,-1),roughnessMap:rma,metalnessMap:rma,aoMap:rma,aoMapIntensity:1,roughness:1,metalness:1,envMapIntensity:.42});
   material.onBeforeCompile=shader=>{
     shader.fragmentShader=shader.fragmentShader
       .replace('#include <roughnessmap_fragment>',THREE.ShaderChunk.roughnessmap_fragment.replace('texelRoughness.g','texelRoughness.r'))
