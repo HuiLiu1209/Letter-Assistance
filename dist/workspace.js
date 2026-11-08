@@ -112,7 +112,21 @@ $('demo-hint').hidden=!demoMode;$('letter-request').required=!demoMode;
 if(demoMode){$('diagram-provider').textContent='Sample letter';$('diagram-generation').textContent='Prints a fixed example for the selected preset. Your input and custom instructions do not alter the sample, and no request is sent to a model.';document.querySelector('.diagram-intro').textContent='Sample mode previews the paper, printing and saved-letter flow without an AI call.';}
 document.addEventListener('click',event=>{if(!event.target.closest('.model-picker')&&!modelMenu.contains(event.target))closeModelMenu();});
 document.addEventListener('keydown',event=>{if(event.key==='Escape')closeModelMenu();});
-function resizeInput() {const input=$('letter-request');input.style.height='auto';input.style.height=`${Math.min(parseFloat(getComputedStyle(input).maxHeight),input.scrollHeight)}px`;}
+const textMeasure=document.createElement('canvas').getContext('2d');
+function syncSendState(){const ready=!!$('letter-request').value.trim()&&!busy;$('send-letter').classList.toggle('is-ready',ready);$('send-letter').disabled=busy||(!ready&&!demoMode);}
+function resizeInput(){
+  const input=$('letter-request'),form=$('letter-form'),wrap=document.querySelector('.composer-wrap'),style=getComputedStyle(input),formStyle=getComputedStyle(form),actions=document.querySelector('.composer-actions');
+  textMeasure.font=`${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+  const actionWidth=$('model-picker').getBoundingClientRect().width+$('send-letter').getBoundingClientRect().width+parseFloat(getComputedStyle(actions).columnGap);
+  const compactWidth=Math.min(600,window.innerWidth-32)-parseFloat(formStyle.paddingLeft)-parseFloat(formStyle.paddingRight)-actionWidth-20;
+  const textWidth=Math.max(...input.value.split('\n').map(line=>textMeasure.measureText(line).width));
+  const threshold=form.classList.contains('is-expanded') ? .72 : .88;
+  const expanded=matchMedia('(max-width:700px)').matches||input.value.includes('\n')||textWidth>Math.max(40,compactWidth)*threshold;
+  form.classList.toggle('is-expanded',expanded);wrap.classList.toggle('is-expanded',expanded);
+  input.style.height='0px';input.style.height=`${Math.min(parseFloat(style.maxHeight),Math.max(parseFloat(style.lineHeight),input.scrollHeight))}px`;
+  syncSendState();
+}
+window.addEventListener('resize',resizeInput);document.fonts.ready.then(resizeInput);
 $('letter-request').value=state.draft;resizeInput();
 $('letter-request').addEventListener('input',()=>{state.draft=$('letter-request').value;persist();resizeInput();});
 $('letter-request').addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing){event.preventDefault();if(!busy)$('letter-form').requestSubmit();}});
@@ -120,7 +134,7 @@ $('letter-form').addEventListener('submit',async event=>{
   event.preventDefault();if(busy)return;
   const request=$('letter-request').value.trim()||(demoMode?'Print a sample letter.':'');if(!request){$('letter-request').focus();return;}
   void unlockPrinterAudio();
-  const role={...selectedRole()};busy=true;$('send-letter').disabled=true;$('letter-request').readOnly=true;$('letter-form').setAttribute('aria-busy','true');
+  const role={...selectedRole()};busy=true;syncSendState();$('letter-request').readOnly=true;$('letter-form').setAttribute('aria-busy','true');
   let printer;
   try {
     notice('Preparing your letter…');printer=await printerReady;printer.prepare();
@@ -142,7 +156,7 @@ $('letter-form').addEventListener('submit',async event=>{
   } catch(error) {
     printer?.clear();notice(error.name==='TimeoutError'?'The model took too long. Your request is kept here; please try again.':error.message||'Unable to write this letter. Please try again.');
   } finally {
-    busy=false;$('send-letter').disabled=false;$('letter-request').readOnly=false;$('letter-form').removeAttribute('aria-busy');
+    busy=false;syncSendState();$('letter-request').readOnly=false;$('letter-form').removeAttribute('aria-busy');
   }
 });
 renderRoles();renderLetters();

@@ -19,7 +19,7 @@ test('request and all eight role fields reach Gemini as user / system content',a
     const r=await send();assert.equal(r.status,200);assert.deepEqual(await r.json(),{text:'Dear Alex,\nThank you.\nSam'});
   });
   assert.match(sent.url,/\/gemini-3\.5-flash-lite:generateContent$/);assert.equal(sent.options.headers['x-goog-api-key'],'test-not-a-real-key');
-  const body=JSON.parse(sent.options.body);assert.equal(body.contents[0].parts[0].text,valid.request);assert.match(body.systemInstruction.parts[0].text,/Required Inputs:/);assert.match(body.systemInstruction.parts[0].text,/Do not send letters/);assert.match(body.systemInstruction.parts[0].text,/No Markdown/);
+  const body=JSON.parse(sent.options.body);assert.equal(body.contents[0].parts[0].text,valid.request);assert.match(body.systemInstruction.parts[0].text,/Required Inputs:/);assert.match(body.systemInstruction.parts[0].text,/Do not send letters/);assert.match(body.systemInstruction.parts[0].text,/No Markdown/);assert.match(body.systemInstruction.parts[0].text,/Omit every detail the user has not supplied/);assert.match(body.systemInstruction.parts[0].text,/30–60 English words/);assert.ok(!body.systemInstruction.parts[0].text.includes('use [placeholders]'));
 });
 test('malformed, oversized, unsupported model and incomplete cards are rejected',async()=>{
   await withServer({},async send=>{
