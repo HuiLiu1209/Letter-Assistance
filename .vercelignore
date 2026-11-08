@@ -1,0 +1,9 @@
+# Only deploy the static app, serverless API, and files used by the build check.
+/*
+!dist/
+!api/
+!src/
+!server.mjs
+!package.json
+!package-lock.json
+!vercel.json

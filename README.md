@@ -2,7 +2,7 @@
 
 An Underwood typewriter on a dark red cloth with warm three-point lighting. The interface follows the supplied [Figma design](https://www.figma.com/design/92HDuPvzQd3dD5tLyaorC8/DesComp?node-id=0-1): collapsible Role Card and Letters sections, a System Diagram, and the bottom composer.
 
-`main` preserves the approved scene-only baseline. `feat/figma-letter-workspace` contains the writing interface and printing flow.
+`main` contains the approved writing interface and printing flow for deployment. The earlier scene-only baseline remains in Git history at `53e7a43473ea57855929e7572c8f2b37fce95e1a`.
 
 ## Run locally
 
@@ -39,7 +39,7 @@ Use the model picker to switch back to Gemini (the normal URL without `?demo=1`)
 
 `server.mjs` serves `dist/` and handles `POST /api/chat`. The Gemini API key is read only on the server from `GEMINI_API_KEY`; `.env.local` is ignored by Git. Never put a key in browser JavaScript, localStorage, a screenshot or a commit.
 
-`api/chat.js` and `vercel.json` provide the same handler for Vercel. Import the repository, select this feature branch, and set `GEMINI_API_KEY` in the deployment environment. The project has no build step beyond JavaScript checks. A purely static host can display the scene/UI, but needs a server route at `/api/chat` to generate letters. This branch does not replace the approved scene-only site automatically.
+`api/chat.js` and `vercel.json` provide the same handler for Vercel. Import the repository, select `main`, and set `GEMINI_API_KEY` in the deployment environment. The project has no build step beyond JavaScript checks. A purely static host can display the scene/UI, but needs a server route at `/api/chat` to generate letters. Vercel uses `dist/` for static files and `api/chat.js` for the streaming API. Local environment files and source-model working files are excluded from CLI deployment by `.vercelignore`.
 
 The handler validates all eight fields and request size, allows only the configured model, applies a timeout, forwards Gemini `streamGenerateContent` SSE chunks without collecting the whole response, and surfaces missing credentials, quota failures, blocked responses and incomplete output without exposing upstream diagnostics. Finished letters are returned as text; the browser displays user/model text through `textContent` or canvas, never as executable HTML.
 

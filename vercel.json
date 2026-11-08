@@ -6,5 +6,7 @@
     "api/chat.js": {
       "maxDuration": 60
     }
-  }
+  },
+  "framework": null,
+  "installCommand": "npm ci"
 }
