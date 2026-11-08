@@ -19,7 +19,7 @@
     <nav class="sidebar" aria-label="Letter workspace">
       <section class="side-card" id="instructions-card">
         <button class="section-toggle" id="instructions-toggle" aria-expanded="false" aria-controls="instructions-panel">
-          <img class="icon" src="./assets/ui/notepad.svg" alt=""><span id="instructions-label">Instructions</span><img class="caret" src="./assets/ui/caret-down.svg" alt="">
+          <img class="icon" src="./assets/ui/notepad.svg" alt=""><span id="instructions-label">Role Card</span><img class="caret" src="./assets/ui/caret-down.svg" alt="">
         </button>
         <div class="fold" id="instructions-panel" inert><div class="fold-inner role-list">
           <button class="new-role" id="new-role"><img src="./assets/ui/pencil-simple.svg" alt="">New Role Card</button>
@@ -65,7 +65,7 @@
       <p class="diagram-intro">You provide the intent. The role sets the boundaries. AI writes the letter.</p>
       <ol class="system-flow">
         <li><span class="flow-label">You</span><strong>Letter request</strong><p>Recipient, facts, tone and language.</p></li>
-        <li><span class="flow-label">Instructions</span><strong id="diagram-role">Thank-You Letter</strong><p>The selected Role Card becomes the system instruction.</p></li>
+        <li><span class="flow-label">Role Card</span><strong id="diagram-role">Thank-You Letter</strong><p>The selected Role Card becomes the system instruction.</p></li>
         <li><span class="flow-label">Gemini</span><strong>Write the letter</strong><p>Uses your request and the Role Card. No invented facts or follow-up chat.</p></li>
         <li><span class="flow-label">Typewriter → Letters</span><strong>Print & save</strong><p>The finished letter prints on paper and is saved on this browser for viewing only.</p></li>
       </ol>

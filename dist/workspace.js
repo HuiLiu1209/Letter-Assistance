@@ -21,7 +21,7 @@ function animateFold(name, open) {
   const toggle = $(`${name}-toggle`), panel = $(`${name}-panel`), card = $(`${name}-card`);
   toggle.setAttribute('aria-expanded', String(open)); panel.inert = !open; card.classList.toggle('is-open', open);
   if (name === 'instructions') {
-    $('instructions-label').textContent = open ? 'Role Card' : 'Instructions';
+    $('instructions-label').textContent = 'Role Card';
     if (matchMedia('(min-width: 701px)').matches) gsap.to(document.querySelector('.sidebar'), {left:open?26:21,top:open?32:40,gap:open?14:11,duration:reducedMotion()?0:.32,ease:'power2.inOut',overwrite:true});
   }
   gsap.killTweensOf(panel); panel.style.visibility = 'visible';
@@ -41,7 +41,7 @@ function renderRoles() {
     if (!roles.length) {const p=document.createElement('p');p.className='empty-state';p.textContent='No custom roles yet.';list.append(p);}
     for (const role of roles) {
       const row=document.createElement('div');row.className='role-row';row.dataset.selected=String(role.id===selectedRole().id);
-      const button=document.createElement('button');button.type='button';button.className='role-select';button.textContent=role.name;button.title=`View ${role.name} Role Card`;button.addEventListener('click',()=>openRole(role));row.append(button);
+      const button=document.createElement('button');button.type='button';button.className='role-select';button.textContent=role.name;button.title=`View ${role.name} Role Card`;button.setAttribute('aria-pressed',String(role.id===selectedRole().id));button.addEventListener('click',()=>openRole(role));row.append(button);
       if (role.id.startsWith('custom-')) {const edit=document.createElement('button');edit.type='button';edit.className='role-edit';edit.setAttribute('aria-label',`Edit ${role.name}`);edit.append(icon('note-pencil'));edit.addEventListener('click',()=>openRole(role));row.append(edit);}
       list.append(row);
     }

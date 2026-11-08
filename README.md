@@ -1,6 +1,6 @@
 # Letter Assistance
 
-An Underwood typewriter on a dark red cloth with warm three-point lighting. The interface follows the supplied [Figma design](https://www.figma.com/design/92HDuPvzQd3dD5tLyaorC8/DesComp?node-id=0-1): collapsible Instructions / Role Card and Letters sections, a System Diagram, and the bottom composer.
+An Underwood typewriter on a dark red cloth with warm three-point lighting. The interface follows the supplied [Figma design](https://www.figma.com/design/92HDuPvzQd3dD5tLyaorC8/DesComp?node-id=0-1): collapsible Role Card and Letters sections, a System Diagram, and the bottom composer.
 
 `main` preserves the approved scene-only baseline. `feat/figma-letter-workspace` contains the writing interface and printing flow.
 
@@ -19,7 +19,7 @@ Open http://127.0.0.1:4173. Without a key, the scene, Role Cards and saved-lette
 
 ## Writing flow
 
-1. Open Instructions to view the Role Cards. Resignation Letter and Thank-You Letter are the presets. View all eight fields and choose “Use this role”, or create/edit a custom Role Card.
+1. Open Role Card to view the presets and custom roles. Resignation Letter and Thank-You Letter are the presets. View all eight fields and choose “Use this role”, or create/edit a custom Role Card.
 2. Describe the letter in the bottom composer. Enter submits; Shift+Enter adds a line.
 3. A separate paper mesh appears in the typewriter. Gemini receives the selected Role Card as its system instruction and the current request as user input. It returns the finished letter directly, without a chat or review step.
 4. GSAP animates the sheet, camera framing, key presses, progressive printing, accordion sections and dialogs. Reduced-motion preferences skip movement and progressive typing.
